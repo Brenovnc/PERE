@@ -5,10 +5,12 @@ import { AuthService } from './auth.service';
 
 /** The login screen is only for visitors; signed-in users go to their own area. */
 export const guestGuard: CanMatchFn = async () => {
+  // inject() only works before the first await: after it, Angular no longer has an injection context.
   const auth = inject(AuthService);
+  const router = inject(Router);
   await auth.ready();
   const user = auth.user();
-  return user ? inject(Router).parseUrl(auth.homeFor(user.role)) : true;
+  return user ? router.parseUrl(auth.homeFor(user.role)) : true;
 };
 
 /** Restricts an area to one role; visitors go to the login screen and other roles to their own area. */
