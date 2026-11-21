@@ -5,6 +5,7 @@
       <div #revealMenu class="reveal-wrap">
         <button
           type="button"
+          class="btn"
           aria-haspopup="menu"
           [attr.aria-expanded]="revealOpen()"
           [disabled]="allSolved()"
@@ -14,13 +15,28 @@
         </button>
         @if (revealOpen()) {
           <div class="reveal-menu" role="menu">
-            <button type="button" role="menuitem" (click)="chooseReveal('cell')">
+            <button
+              type="button"
+              class="btn btn-ghost"
+              role="menuitem"
+              (click)="chooseReveal('cell')"
+            >
               Revelar célula
             </button>
-            <button type="button" role="menuitem" (click)="chooseReveal('word')">
+            <button
+              type="button"
+              class="btn btn-ghost"
+              role="menuitem"
+              (click)="chooseReveal('word')"
+            >
               Revelar palavra
             </button>
-            <button type="button" role="menuitem" (click)="chooseReveal('all')">
+            <button
+              type="button"
+              class="btn btn-ghost"
+              role="menuitem"
+              (click)="chooseReveal('all')"
+            >
               Revelar cruzadinha
             </button>
           </div>
@@ -29,7 +45,7 @@
       <button
         #helpButton
         type="button"
-        class="help-button"
+        class="btn help-button"
         aria-label="Como funciona a cruzadinha"
         (click)="helpOpen.set(true)"
       >
@@ -41,16 +57,19 @@
   @if (grid().words.length < 2) {
     <div class="empty">
       <p>Ainda não há palavras suficientes para montar a cruzadinha.</p>
-      <button type="button" (click)="back.emit()">Voltar ao módulo</button>
+      <button type="button" class="btn" (click)="back.emit()">Voltar ao módulo</button>
     </div>
   } @else {
-    <p>
-      Foque uma célula para selecionar a palavra. Em cruzamentos, clique novamente para alternar a
-      direção. Pressione Enter para conferir.
-    </p>
     @let displayed = displayedWord();
     <div class="active-bar">
-      <button type="button" aria-label="Palavra anterior" (click)="navigateWord(-1)">‹</button>
+      <button
+        type="button"
+        class="btn btn-ghost"
+        aria-label="Palavra anterior"
+        (click)="navigateWord(-1)"
+      >
+        ‹
+      </button>
       <span class="active-number">{{ displayed?.number ?? 1 }}</span>
       <span
         >{{ displayed?.direction === 'down' ? '↓' : '→'
@@ -59,7 +78,14 @@
         }}</span></span
       >
       <p>{{ displayed?.clue ?? 'Selecione uma palavra' }}</p>
-      <button type="button" aria-label="Próxima palavra" (click)="navigateWord(1)">›</button>
+      <button
+        type="button"
+        class="btn btn-ghost"
+        aria-label="Próxima palavra"
+        (click)="navigateWord(1)"
+      >
+        ›
+      </button>
     </div>
     <p class="sr-only" aria-live="polite">{{ message() }}</p>
 
@@ -182,8 +208,10 @@
     @if (allSolved()) {
       <div class="complete" role="status">
         <p>Cruzadinha concluída!</p>
-        <button type="button" (click)="newCrossword()">Nova cruzadinha</button>
-        <button type="button" (click)="back.emit()">Voltar ao módulo</button>
+        <button type="button" class="btn btn-primary" (click)="newCrossword()">
+          Nova cruzadinha
+        </button>
+        <button type="button" class="btn" (click)="back.emit()">Voltar ao módulo</button>
       </div>
     }
   }
@@ -200,8 +228,12 @@
       >
         <div class="help-header">
           <h2 id="crossword-help-title">Como funciona a cruzadinha</h2>
-          <button type="button" (click)="closeHelp()">Fechar</button>
+          <button type="button" class="btn" (click)="closeHelp()">Fechar</button>
         </div>
+        <p class="help-summary">
+          Foque uma célula para selecionar a palavra. Em cruzamentos, clique novamente para alternar
+          a direção. Pressione Enter para conferir.
+        </p>
         <h3>Objetivo</h3>
         <p>Preencha a grade com as palavras descritas nas pistas.</p>
         <h3>Escolher uma palavra</h3>

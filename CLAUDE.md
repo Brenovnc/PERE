@@ -41,4 +41,15 @@ PERE (Plataforma Educacional de Repetição Espaçada). Professores criam módul
 
 ## Fora de escopo (decidido)
 
-Gamificação, login com Google, PWA/offline, editor de módulos para aluno, mudanças nos minigames, mudar onde fica a cruzadinha, publicação (Vercel/Neon) sem pedido explícito.
+Gamificação, login com Google, PWA/offline, editor de módulos para aluno, mudanças de regra ou de comportamento dos minigames (o visual pode mudar), mudar onde fica a cruzadinha, publicação (Vercel/Neon) sem pedido explícito.
+
+## Guia visual
+- Uma ação principal por área: só ela usa o botão cheio na cor de destaque (`btn-primary`). As outras são secundárias (`btn`, contorno) ou discretas (`btn-ghost`, só texto). Ações destrutivas nunca são principais: usam `btn-danger` (contorno/texto vermelho, sem fundo cheio).
+- Hierarquia por tamanho, peso e cor juntos. Nos minigames, o conteúdo da atividade (afirmação, frase, pistas, itens) é sempre o texto mais destacado da tela; rótulos, contadores e instruções são menores e em cor atenuada.
+- Menos caixas: não colocar card com borda e sombra dentro de outro card. Agrupar com fundo (`surface-2`) ou espaçamento.
+- Cores em 60-30-10: neutros quentes nos fundos, superfícies e texto no meio, destaque em ~10% (bege no tema escuro, marrom no claro). Ardósia (`--select`) só para seleção e destino em jogos. Verde, vermelho e ocre só para estado (acerto, erro, aviso).
+- Instruções longas vão para ajuda contextual (botão "?" ao lado do jogo), mas a interface precisa se explicar sozinha por estados visuais (item selecionado, destino possível, item usado). A ajuda nunca é a única forma de entender a tarefa.
+- Alvos clicáveis com pelo menos 44px nos minigames e 40px no resto. Foco sempre visível (contorno de 2–3px com contraste ≥ 3:1).
+- Tipografia: Lexend para títulos e enunciados das atividades (`font-display`); Atkinson Hyperlegible Next para texto e interface (`font-sans`). Não usar fonte serifada.
+- Raios: 0.5rem em controles (botões, campos, chips), 0.75rem em cards, 1rem em painéis grandes e diálogos, 999px em pílulas.
+- Sombras: nenhuma em cards no tema escuro (a elevação vem do tom da superfície); no claro, só `0 1px 2px` sutil. Menus e diálogos podem ter sombra maior nos dois temas.

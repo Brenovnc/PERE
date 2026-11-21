@@ -4,8 +4,8 @@
     [title]="'Olá, ' + firstName()"
     description="Organize seus conteúdos e acompanhe suas turmas."
   >
-    <a class="action" routerLink="/teacher/modules">Novo módulo</a>
-    <a class="action secondary" routerLink="/teacher/classrooms">Nova turma</a>
+    <a class="btn btn-primary" routerLink="/teacher/modules">Novo módulo</a>
+    <a class="btn" routerLink="/teacher/classrooms">Nova turma</a>
   </app-page-header>
 
   @if (loading()) {
@@ -24,7 +24,7 @@
             <path d="M14 3.5v4h4M9 11h6M9 14.5h6M9 18h4" />
           </svg>
         </span>
-        <span>Módulos</span>
+        <span class="metric-label">Módulos</span>
         <strong>{{ summary.modules }}</strong>
       </a>
       <a routerLink="/teacher/classrooms">
@@ -36,7 +36,7 @@
             <path d="M14.5 14.5a4.25 4.25 0 0 1 6.75 3.4V20h-3" />
           </svg>
         </span>
-        <span>Turmas ativas</span>
+        <span class="metric-label">Turmas ativas</span>
         <strong>{{ summary.activeClassrooms }}</strong>
       </a>
       <a routerLink="/teacher/dashboard">
@@ -47,7 +47,7 @@
             <path d="m16 10.5 1.75 1.75L21 8.75" />
           </svg>
         </span>
-        <span>Alunos ativos</span>
+        <span class="metric-label">Alunos ativos</span>
         <strong>{{ summary.activeStudents }}</strong>
       </a>
     </section>
@@ -57,7 +57,7 @@
     <section class="card-panel">
       <header>
         <h2>Módulos recentes</h2>
-        <a class="see-all" routerLink="/teacher/modules">Ver todos</a>
+        <a class="btn btn-ghost see-all" routerLink="/teacher/modules">Ver todos</a>
       </header>
       @for (module of modules().slice(0, 4); track module.id) {
         <a class="item" routerLink="/teacher/modules">
@@ -74,7 +74,7 @@
     <section class="card-panel">
       <header>
         <h2>Turmas ativas</h2>
-        <a class="see-all" routerLink="/teacher/classrooms">Ver todas</a>
+        <a class="btn btn-ghost see-all" routerLink="/teacher/classrooms">Ver todas</a>
       </header>
       @for (classroom of classrooms().slice(0, 4); track classroom.id) {
         <a class="item" routerLink="/teacher/dashboard" [queryParams]="{ classroom: classroom.id }">

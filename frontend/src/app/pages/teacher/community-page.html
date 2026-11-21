@@ -3,8 +3,10 @@
   @if (success()) {
     <div class="notice" role="status" aria-live="polite">
       {{ success() }}
-      <a class="button-link" routerLink="/teacher/modules">Ver em Módulos</a>
-      <button type="button" aria-label="Dispensar" (click)="success.set('')">×</button>
+      <a class="btn" routerLink="/teacher/modules">Ver em Módulos</a>
+      <button type="button" class="btn btn-ghost" aria-label="Dispensar" (click)="success.set('')">
+        ×
+      </button>
     </div>
   }
   @if (error()) {
@@ -14,7 +16,9 @@
   <section class="panel">
     <div class="heading">
       <h2>Meus envios</h2>
-      <button type="button" (click)="shareOpen.set(!shareOpen())">Enviar módulo</button>
+      <button type="button" class="btn btn-primary" (click)="shareOpen.set(!shareOpen())">
+        Enviar módulo
+      </button>
     </div>
     @if (shareOpen()) {
       <div class="share-box">
@@ -29,7 +33,9 @@
               >{{ module.title }} · {{ module.subject }} ·
               {{ module.activeConceptCount }} conceitos</span
             >
-            <button type="button" [disabled]="!!busy()" (click)="share(module.id)">Enviar</button>
+            <button type="button" class="btn" [disabled]="!!busy()" (click)="share(module.id)">
+              Enviar
+            </button>
           </div>
         } @empty {
           <app-empty-state>Nenhum módulo publicado disponível para envio.</app-empty-state>
@@ -47,12 +53,19 @@
         </span>
         <span class="row-actions">
           <a
-            class="button-link"
+            class="btn"
             routerLink="/teacher/modules"
             [queryParams]="{ open: item.id, from: 'community' }"
             >Editar</a
           >
-          <button type="button" [disabled]="!!busy()" (click)="remove(item.id)">Excluir</button>
+          <button
+            type="button"
+            class="btn btn-danger"
+            [disabled]="!!busy()"
+            (click)="remove(item.id)"
+          >
+            Excluir
+          </button>
         </span>
       </div>
     } @empty {
@@ -102,7 +115,7 @@
             }
           </div>
         </div>
-        <button type="button" [disabled]="!!busy()" (click)="download(item)">
+        <button type="button" class="btn shrink-0" [disabled]="!!busy()" (click)="download(item)">
           {{
             busy() === item.id
               ? 'Baixando…'
@@ -116,7 +129,7 @@
       <app-empty-state>Nenhum módulo encontrado.</app-empty-state>
     }
     @if (total() > items().length) {
-      <button type="button" (click)="loadMore()">Carregar mais</button>
+      <button type="button" class="btn" (click)="loadMore()">Carregar mais</button>
     }
   </section>
 </main>

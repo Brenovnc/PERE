@@ -6,9 +6,24 @@ import { activityTypeLabel, formatIsoDate } from '../../shared/format';
 /** Data of the charts shared by the dashboard and the student details page. */
 export function distributionValues(stats: StudentStatistics): StackedValue[] {
   return [
-    { label: 'Dominados', value: stats.distribution.mastered, color: 'var(--chart-2)' },
-    { label: 'Em aprendizagem', value: stats.distribution.learning, color: 'var(--chart-1)' },
-    { label: 'Não iniciados', value: stats.distribution.notStarted, color: 'var(--chart-3)' },
+    {
+      label: 'Dominados',
+      value: stats.distribution.mastered,
+      color: 'var(--chart-2)',
+      textColor: 'var(--chart-2-text)',
+    },
+    {
+      label: 'Em aprendizagem',
+      value: stats.distribution.learning,
+      color: 'var(--chart-1)',
+      textColor: 'var(--chart-1-text)',
+    },
+    {
+      label: 'Não iniciados',
+      value: stats.distribution.notStarted,
+      color: 'var(--chart-3)',
+      textColor: 'var(--chart-3-text)',
+    },
   ];
 }
 

@@ -14,7 +14,7 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <p
-      class="m-0 text-[1.1rem] text-accent tabular-nums"
+      class="m-0 text-[0.875rem] text-muted tabular-nums"
       [attr.aria-label]="'Tempo nesta atividade: ' + elapsed()"
     >
       <span aria-hidden="true">{{ elapsed() }}</span>

@@ -10,13 +10,12 @@
   }
 
   @if (selected(); as classroom) {
-    <button type="button" (click)="close()">← Minhas turmas</button>
-    <a
-      class="button-link"
-      routerLink="/teacher/dashboard"
-      [queryParams]="{ classroom: classroom.id }"
-      >Ver no dashboard</a
-    >
+    <div class="top-actions">
+      <button type="button" class="btn btn-ghost" (click)="close()">← Minhas turmas</button>
+      <a class="btn" routerLink="/teacher/dashboard" [queryParams]="{ classroom: classroom.id }"
+        >Ver no dashboard</a
+      >
+    </div>
 
     <section class="panel">
       <h2>
@@ -34,11 +33,21 @@
             title="Use letras, números e hífens entre grupos"
             [value]="classroom.code"
         /></label>
-        <button type="submit" [disabled]="busy()">Salvar</button>
-        <button type="button" [disabled]="busy() || archived()" (click)="regenerateCode()">
+        <button type="submit" class="btn btn-primary" [disabled]="busy()">Salvar</button>
+        <button
+          type="button"
+          class="btn"
+          [disabled]="busy() || archived()"
+          (click)="regenerateCode()"
+        >
           Gerar novo código
         </button>
-        <button type="button" [disabled]="busy() || archived()" (click)="archive()">
+        <button
+          type="button"
+          class="btn btn-danger"
+          [disabled]="busy() || archived()"
+          (click)="archive()"
+        >
           Arquivar
         </button>
       </form>
@@ -48,26 +57,28 @@
       </p>
 
       <h3>Módulos associados</h3>
-      <ul>
-        @for (module of classroom.modules; track module.id) {
-          <li>
-            {{ module.title }} ·
-            {{
-              module.status === 'Published'
-                ? 'Publicado'
-                : module.status === 'Archived'
-                  ? 'Arquivado'
-                  : 'Rascunho'
-            }}
-            <button type="button" [disabled]="busy()" (click)="unassign(module.id)">
-              Desassociar
-            </button>
-          </li>
-        } @empty {
-          <li class="muted">Nenhum módulo associado.</li>
-        }
-      </ul>
-      <form class="form" (submit)="assign($event)">
+      @if (classroom.modules.length) {
+        <ul class="module-list">
+          @for (module of classroom.modules; track module.id) {
+            <li class="module-row">
+              <strong class="module-title">{{ module.title }}</strong>
+              <span class="status-pill">{{ moduleStatusLabels[module.status] }}</span>
+              <button
+                type="button"
+                class="btn btn-danger min-h-10 py-1.5"
+                [disabled]="busy()"
+                [attr.aria-label]="'Desassociar ' + module.title"
+                (click)="unassign(module.id)"
+              >
+                Desassociar
+              </button>
+            </li>
+          }
+        </ul>
+      } @else {
+        <app-empty-state>Nenhum módulo associado.</app-empty-state>
+      }
+      <form class="form assign-form" (submit)="assign($event)">
         <label
           >Associar módulo publicado
           <select #moduleSelect (change)="moduleId.set(moduleSelect.value)">
@@ -79,7 +90,7 @@
             }
           </select>
         </label>
-        <button type="submit" [disabled]="busy() || !moduleId()">Associar</button>
+        <button type="submit" class="btn" [disabled]="busy() || !moduleId()">Associar</button>
       </form>
     </section>
 
@@ -87,7 +98,9 @@
       <div class="panel-heading">
         <h2 id="pending-title">Pedidos pendentes ({{ pending().length }})</h2>
         @if (pending().length > 0) {
-          <button type="button" [disabled]="busy()" (click)="approveAll()">Aprovar todos</button>
+          <button type="button" class="btn" [disabled]="busy()" (click)="approveAll()">
+            Aprovar todos
+          </button>
         }
       </div>
       @if (pending().length) {
@@ -113,6 +126,7 @@
                     <div class="student-actions">
                       <button
                         type="button"
+                        class="btn btn-primary"
                         [disabled]="busy()"
                         [attr.aria-label]="'Aprovar ' + student.name"
                         (click)="approve(student)"
@@ -121,7 +135,7 @@
                       </button>
                       <button
                         type="button"
-                        class="secondary"
+                        class="btn btn-danger"
                         [disabled]="busy()"
                         [attr.aria-label]="'Recusar ' + student.name"
                         (click)="reject(student)"
@@ -167,6 +181,7 @@
                     <div class="student-actions">
                       <button
                         type="button"
+                        class="btn btn-danger"
                         [disabled]="busy()"
                         [attr.aria-label]="'Remover ' + student.name"
                         (click)="remove(student)"
@@ -198,7 +213,7 @@
             pattern="[A-Za-z0-9]+(-[A-Za-z0-9]+)*"
             title="Use letras, números e hífens entre grupos"
         /></label>
-        <button type="submit" [disabled]="busy()">Criar turma</button>
+        <button type="submit" class="btn btn-primary" [disabled]="busy()">Criar turma</button>
       </form>
       <section class="panel">
         <h2>Minhas turmas</h2>

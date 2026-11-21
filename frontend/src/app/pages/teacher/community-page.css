@@ -4,16 +4,16 @@ h2 {
 }
 
 .panel {
-  margin: 20px 0;
-  padding: 24px;
+  margin: 0 0 1rem;
+  padding: 1.5rem;
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 0.75rem;
   background: var(--surface);
-  box-shadow: 0 6px 20px var(--shadow);
+  box-shadow: var(--card-shadow);
 }
 
 .heading {
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
 }
 
 .heading,
@@ -22,43 +22,45 @@ h2 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 1rem;
 }
 
 .row {
-  padding: 14px 0;
+  padding: 0.875rem 0;
   border-top: 1px solid var(--border);
 }
 
 .row > span:first-child {
   display: grid;
-  gap: 5px;
+  gap: 0.3rem;
 }
 
 .row-actions {
   display: flex;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 small {
-  color: var(--accent);
+  color: var(--text-muted);
 }
 
+/* Grouped by background, not by another bordered box inside the panel. */
 .card {
   align-items: flex-start;
-  margin: 12px 0;
-  padding: 18px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface-3);
+  margin: 0.75rem 0;
+  padding: 1.125rem;
+  border: 0;
+  border-radius: 0.75rem;
+  background: var(--surface-2);
+  box-shadow: none;
 }
 
 .card h3 {
-  margin: 0 0 6px;
+  margin: 0 0 0.375rem;
 }
 
 .card p {
-  margin: 7px 0;
+  margin: 0.45rem 0;
 }
 
 .description {
@@ -70,73 +72,51 @@ small {
 
 .filters {
   display: flex;
-  gap: 12px;
-  margin: 18px 0;
+  gap: 0.75rem;
+  margin: 1.125rem 0;
 }
 
 .filters input {
   flex: 1;
-  padding: 10px;
+  min-height: 2.75rem;
+  padding: 0.6rem;
   border: 1px solid var(--border-strong);
-  border-radius: 8px;
+  border-radius: 0.5rem;
   color: var(--text);
-  background: var(--accent-soft);
+  background: var(--field-bg);
   font: inherit;
-}
-
-.filters input::placeholder {
-  color: var(--accent);
 }
 
 .chip {
   display: inline-block;
-  margin: 8px 6px 0 0;
-  padding: 4px 8px;
-  border-radius: 20px;
+  margin: 0.5rem 0.375rem 0 0;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
   color: var(--text);
-  background: var(--accent-soft);
+  background: var(--surface-3);
   font-size: 0.8rem;
 }
 
 .share-box {
-  margin: 16px 0;
-  padding: 12px;
-  border-radius: 10px;
-  background: var(--surface);
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: var(--surface-2);
 }
 
 .notice {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  padding: 14px;
+  gap: 0.75rem;
+  padding: 0.875rem;
   border: 1px solid var(--success-border);
-  border-radius: 10px;
+  border-radius: 0.5rem;
   color: var(--success-text);
   background: var(--success-bg);
 }
 
-button,
-.button-link {
-  padding: 9px 13px;
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  color: var(--btn-cta-text);
-  background: var(--btn-cta-bg);
-  font: inherit;
-  font-weight: 650;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-button:disabled {
-  cursor: wait;
-}
-
-.button-link:focus-visible {
-  outline: 3px solid var(--focus-ring);
-  outline-offset: 2px;
-}
+/* Buttons use the shared classes (btn, btn-primary, btn-danger, btn-ghost) from components.css. */
 
 @media (max-width: 650px) {
   .heading,

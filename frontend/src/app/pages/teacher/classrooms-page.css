@@ -3,16 +3,16 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
   gap: 1rem;
-  margin-top: 1.5rem;
 }
 
 .panel {
   min-width: 0;
-  margin: 1rem 0;
+  margin: 0 0 1rem;
   padding: 1.25rem;
   border: 1px solid var(--border);
-  border-radius: 1rem;
+  border-radius: 0.75rem;
   background: var(--surface);
+  box-shadow: var(--card-shadow);
 }
 
 .panel h2 {
@@ -39,45 +39,24 @@ label {
   color: var(--text);
 }
 
-input,
-select {
+input {
   width: 100%;
   border: 1px solid var(--border-strong);
-  border-radius: 0.55rem;
+  border-radius: 0.5rem;
   padding: 0.65rem;
   color: inherit;
-  background: var(--accent-soft);
+  background: var(--field-bg);
   font: inherit;
 }
 
-button,
-.button-link {
-  display: inline-block;
-  min-height: 2.65rem;
-  margin: 0.2rem;
-  padding: 0.55rem 0.8rem;
-  border: 1px solid var(--border);
-  border-radius: 0.55rem;
-  color: var(--btn-cta-text);
-  background: var(--btn-cta-bg);
-  font: inherit;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-button:disabled {
-  cursor: not-allowed;
-}
-
-button.secondary {
-  border-color: var(--btn-secondary-border);
-  color: var(--btn-secondary-text);
-  background: var(--btn-secondary-bg);
-}
-
-.button-link:focus-visible {
-  outline: 3px solid var(--focus-ring);
-  outline-offset: 2px;
+/* Buttons use the shared classes (btn, btn-primary, btn-danger, btn-ghost) from components.css. */
+.top-actions {
+  display: flex;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .form {
@@ -95,9 +74,58 @@ li {
   padding: 0.55rem 0;
 }
 
+/* Same row pattern as the lists of the teacher home page, separated by a thin border. */
+.module-list {
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.module-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.module-row:last-child {
+  border-bottom: 0;
+}
+
+.module-title {
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.status-pill {
+  padding: 0.1rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.module-row .btn {
+  flex: none;
+}
+
+/* Select and button stay on one line, even on narrow screens. */
+.assign-form {
+  flex-wrap: nowrap;
+}
+
+.assign-form label {
+  min-width: 0;
+  margin: 0;
+}
+
 small,
 .muted {
-  color: var(--accent);
+  color: var(--text-muted);
 }
 
 .muted {
@@ -135,11 +163,16 @@ small,
   min-height: 0;
   margin: 0;
   padding: 0.8rem;
-  border: 1px solid var(--border);
-  border-radius: 0.65rem;
+  border: 0;
+  border-radius: 0.75rem;
   color: var(--text);
-  background: var(--surface-3);
+  background: var(--surface-2);
   text-align: left;
+  cursor: pointer;
+}
+
+.classroom-link:hover {
+  background: var(--surface-3);
 }
 
 .classroom-link > span:first-child {
@@ -167,7 +200,7 @@ small,
 .pending-badge {
   padding: 0.15rem 0.5rem;
   border: 1px solid var(--warning-border);
-  border-radius: 99px;
+  border-radius: 999px;
   color: var(--warning-text);
   background: var(--warning-bg);
   font-size: 0.78rem;
@@ -188,7 +221,7 @@ small,
 
 .student-table th {
   padding: 0.55rem 0.75rem;
-  color: var(--accent);
+  color: var(--text-muted);
   font-size: 0.78rem;
   font-weight: 600;
   text-align: left;
@@ -208,11 +241,11 @@ small,
 }
 
 .student-table td:first-child {
-  border-radius: 0.6rem 0 0 0.6rem;
+  border-radius: 0.75rem 0 0 0.75rem;
 }
 
 .student-table td:last-child {
-  border-radius: 0 0.6rem 0.6rem 0;
+  border-radius: 0 0.75rem 0.75rem 0;
 }
 
 .student-actions {
@@ -229,12 +262,12 @@ small,
     grid-template-columns: 1fr;
   }
 
-  .form {
+  .form:not(.assign-form) {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .form label {
+  .form:not(.assign-form) label {
     flex-basis: auto;
     width: 100%;
   }
@@ -260,8 +293,7 @@ small,
   .student-table tr {
     margin-bottom: 0.65rem;
     padding: 0.35rem 0.75rem;
-    border: 1px solid var(--border);
-    border-radius: 0.7rem;
+    border-radius: 0.75rem;
   }
 
   .student-table td {
@@ -273,7 +305,7 @@ small,
 
   .student-table td::before {
     content: attr(data-label);
-    color: var(--accent);
+    color: var(--text-muted);
     font-size: 0.82rem;
   }
 

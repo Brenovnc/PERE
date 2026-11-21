@@ -1,5 +1,15 @@
 <section aria-labelledby="fill-blank-title" cdkDropListGroup>
-  <h2 id="fill-blank-title">Complete as lacunas</h2>
+  <div class="game-head">
+    <h2 id="fill-blank-title" class="game-label">Complete as lacunas</h2>
+    <app-help-popover>
+      <p>
+        Clique numa palavra para colocá-la na lacuna destacada (por padrão, a primeira vazia). Para
+        escolher outra lacuna, clique nela antes. Você também pode arrastar a palavra até a lacuna.
+        Para devolver uma palavra, clique nela na lacuna ou arraste-a para fora.
+      </p>
+    </app-help-popover>
+  </div>
+  @let numbered = activity().payload.slotNumbers.length > 1;
   <p class="sentence">
     @for (part of parts(); track $index) {
       @if (part.slot === null) {
@@ -21,53 +31,70 @@
             [cdkDragData]="{ from: 'slot', slot }"
             [cdkDragDisabled]="disabled() || value === undefined"
             [cdkDragStartDelay]="startDelay"
-            [class.slot-selectable]="selectedOption() !== null"
+            [class.slot-filled]="value !== undefined"
+            [class.slot-active]="activeSlot() === slot"
             [attr.aria-label]="
-              value === undefined
-                ? 'Lacuna ' + slot + ', vazia'
-                : 'Lacuna ' + slot + ', preenchida com ' + value + '. Clique para remover'
+              value !== undefined
+                ? 'Lacuna ' + slot + ', preenchida com ' + value + '. Clique para remover'
+                : activeSlot() === slot
+                  ? 'Lacuna ' + slot + ', vazia, próxima a ser preenchida'
+                  : 'Lacuna ' + slot + ', vazia. Clique para escolher esta lacuna'
             "
             [disabled]="disabled()"
             (click)="chooseSlot(slot)"
           >
-            {{ value ?? 'Escolher palavra' }}
+            @if (value !== undefined) {
+              <span>{{ value }}</span>
+              <span class="slot-remove" aria-hidden="true">×</span>
+            } @else if (numbered) {
+              <span class="slot-number" aria-hidden="true">{{ slot }}</span>
+            }
           </button>
         </span>
       }
     }
   </p>
-  <p>
-    Clique numa opção para destacá-la e depois na lacuna, ou arraste-a até a lacuna. Para remover
-    uma palavra, clique nela ou arraste-a para fora da lacuna.
-  </p>
-  <ul
-    class="options"
-    aria-label="Opções de resposta"
-    cdkDropList
-    cdkDropListSortingDisabled
-    (cdkDropListDropped)="dropOnOptions($event)"
-  >
-    @for (option of activity().payload.options; track $index; let index = $index) {
-      @let used = usedOptions().has(index);
-      <li class="min-w-0">
-        <button
-          type="button"
-          class="btn option"
-          cdkDrag
-          [cdkDragData]="{ from: 'option', index }"
-          [cdkDragDisabled]="disabled() || used"
-          [cdkDragStartDelay]="startDelay"
-          [disabled]="disabled() || used"
-          [attr.aria-pressed]="selectedOption() === index"
-          [attr.aria-label]="option + (used ? ', já usada' : '')"
-          (click)="toggleOption(index)"
-        >
-          {{ option }}
-        </button>
-      </li>
-    }
-  </ul>
-  <button type="button" class="btn" [disabled]="disabled() || !complete()" (click)="submit()">
-    Enviar resposta
-  </button>
+  <div class="bank">
+    <p class="bank-title" aria-hidden="true">Palavras</p>
+    <ul
+      class="options"
+      aria-label="Opções de resposta"
+      cdkDropList
+      cdkDropListSortingDisabled
+      (cdkDropListDropped)="dropOnOptions($event)"
+    >
+      @for (option of activity().payload.options; track $index; let index = $index) {
+        @let used = usedOptions().has(index);
+        <li class="min-w-0">
+          <button
+            type="button"
+            class="btn option"
+            cdkDrag
+            [cdkDragData]="{ from: 'option', index }"
+            [cdkDragDisabled]="disabled() || used"
+            [cdkDragStartDelay]="startDelay"
+            [class.option-used]="used"
+            [disabled]="disabled() || used"
+            [attr.aria-label]="option + (used ? ', já usada' : '')"
+            (click)="pickOption(index)"
+          >
+            {{ option }}
+          </button>
+        </li>
+      }
+    </ul>
+  </div>
+  <div class="game-foot">
+    <p class="status" aria-live="polite">
+      {{ filledCount() }} de {{ activity().payload.slotNumbers.length }} lacunas preenchidas
+    </p>
+    <button
+      type="button"
+      class="btn btn-primary"
+      [disabled]="disabled() || !complete()"
+      (click)="submit()"
+    >
+      Confirmar resposta
+    </button>
+  </div>
 </section>

@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
 import { StatisticsFilters as Filters } from '../../core/teacher.models';
 import { activityTypeLabel, formatIsoDate } from '../format';
@@ -50,6 +51,7 @@ export function statisticsFilterSummary(value: Filters, modules: FilterOption[])
 /** Period, module, activity type and minimum attempts. Fields that do not apply to the chart are disabled. */
 @Component({
   selector: 'app-statistics-filters',
+  imports: [NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './statistics-filters.html',
   styleUrl: './statistics-filters.css',
@@ -58,6 +60,8 @@ export class StatisticsFiltersComponent {
   readonly value = model.required<Filters>();
   readonly modules = input<FilterOption[]>([]);
   readonly showMinAttempts = input(false);
+  /** The dashboard shows its own "Limpar filtros" button in the panel header. */
+  readonly showClear = input(true);
   readonly disablePeriod = input(false);
   readonly disableActivityType = input(false);
   readonly disableMinAttempts = input(false);
@@ -84,7 +88,7 @@ export class StatisticsFiltersComponent {
     else this.update({ custom: false, days: Number(selected), from: undefined, to: undefined });
   }
 
-  protected clear(): void {
+  clear(): void {
     this.value.set({
       ...defaultStatisticsFilters,
       ...(this.showMinAttempts() ? { minAttempts: 3 } : {}),

@@ -2,15 +2,9 @@
   color: var(--text);
 }
 
+/* Colors and borders come from the shared btn classes; these rules only shape special buttons. */
 .game button {
-  min-height: 2.75rem;
-  border: 1px solid var(--border);
-  border-radius: 0.55rem;
-  padding: 0.6rem 0.9rem;
-  color: var(--btn-cta-text);
-  background: var(--btn-cta-bg);
   font: inherit;
-  font-weight: 650;
   cursor: pointer;
 }
 
@@ -47,19 +41,15 @@
   min-width: 12rem;
   padding: 0.35rem;
   border: 1px solid var(--border);
-  border-radius: 0.6rem;
+  border-radius: 0.75rem;
   background: var(--surface-3);
   box-shadow: 0 0.5rem 1.2rem var(--shadow);
 }
 
 .reveal-menu button {
-  border-color: var(--text);
-  color: var(--text);
-  background: transparent;
   text-align: left;
 }
 
-.reveal-menu button:hover,
 .reveal-menu button:focus-visible {
   background: var(--surface-2);
 }
@@ -84,7 +74,7 @@
   margin: 0.75rem 0;
   padding: 0.75rem;
   border: 1px solid var(--border);
-  border-radius: 0.7rem;
+  border-radius: 0.75rem;
   background: var(--surface);
 }
 
@@ -94,9 +84,10 @@
 }
 
 .active-bar button {
-  min-width: 2.5rem;
+  min-width: 2.75rem;
   padding: 0.2rem;
   font-size: 1.5rem;
+  line-height: 1;
 }
 
 .active-number {
@@ -160,7 +151,7 @@
   background: var(--game-cell-bg);
   text-align: center;
   text-transform: uppercase;
-  font: 700 1.15rem/1 sans-serif;
+  font: 700 1.15rem/1 var(--font-display);
   transition:
     background-color 1.5s ease,
     border-color 1.5s ease;
@@ -312,7 +303,7 @@
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 0.7rem;
+  border-radius: 0.75rem;
   background: var(--surface);
 }
 
@@ -343,6 +334,7 @@
   min-height: 0;
   padding: 0.45rem;
   border: 1px solid transparent;
+  border-radius: 0.5rem;
   color: var(--text);
   background: transparent;
   font-size: 0.9rem;
@@ -387,7 +379,7 @@
   overflow: auto;
   padding: 1.25rem;
   border: 1px solid var(--border);
-  border-radius: 0.8rem;
+  border-radius: 1rem;
   color: var(--text);
   background: var(--surface);
   box-shadow: 0 1rem 3rem var(--shadow);
@@ -409,6 +401,16 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+}
+
+.help-dialog .help-summary {
+  margin-top: 0.75rem;
+  color: var(--text-muted);
+}
+
+.help-header button {
+  flex: none;
+  overflow-wrap: normal;
 }
 
 .help-header h2 {

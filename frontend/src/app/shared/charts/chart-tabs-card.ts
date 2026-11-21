@@ -21,7 +21,9 @@ let nextId = 0;
   selector: 'app-chart-tabs-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="mb-5 min-w-0 overflow-hidden rounded-2xl border border-border bg-surface">
+    <section
+      class="mb-4 min-w-0 overflow-hidden rounded-xl border border-border bg-surface shadow-card"
+    >
       <div
         class="flex gap-[0.35rem] overflow-x-auto border-b border-border p-[0.65rem] max-[600px]:gap-[0.2rem]"
         role="tablist"
@@ -32,7 +34,7 @@ let nextId = 0;
             #tabButton
             type="button"
             role="tab"
-            class="min-h-[2.7rem] shrink-0 cursor-pointer rounded-[0.55rem] border border-transparent bg-transparent px-[0.8rem] py-[0.55rem] text-text hover:bg-surface-2 focus-visible:outline-offset-[-3px] aria-selected:border-border aria-selected:bg-surface-3 aria-selected:text-heading max-[600px]:px-[0.65rem] max-[600px]:py-2 max-[600px]:text-[0.88rem]"
+            class="min-h-[2.7rem] shrink-0 cursor-pointer rounded-lg border border-transparent bg-transparent px-[0.8rem] py-[0.55rem] text-text hover:bg-surface-2 focus-visible:outline-offset-[-3px] aria-selected:border-border aria-selected:bg-surface-3 aria-selected:text-heading max-[600px]:px-[0.65rem] max-[600px]:py-2 max-[600px]:text-[0.88rem]"
             [id]="prefix + '-tab-' + tab.id"
             [attr.aria-selected]="active().id === tab.id"
             [attr.aria-controls]="prefix + '-panel'"
@@ -47,7 +49,7 @@ let nextId = 0;
       <div
         role="tabpanel"
         tabindex="0"
-        class="min-h-[clamp(22rem,55vh,40rem)] overflow-auto p-[clamp(1rem,2vw,1.5rem)] focus-visible:outline-offset-[-3px]"
+        class="overflow-auto p-[clamp(1rem,2vw,1.5rem)] focus-visible:outline-offset-[-3px]"
         [id]="prefix + '-panel'"
         [attr.aria-labelledby]="prefix + '-tab-' + active().id"
       >

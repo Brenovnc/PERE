@@ -14,6 +14,11 @@ import { formatLastAccess } from '../../shared/format';
 import { PageHeader } from '../../shared/page-header';
 
 const statusLabels: Record<string, string> = { Active: 'Ativa', Archived: 'Arquivada' };
+const moduleStatusLabels: Record<string, string> = {
+  Published: 'Publicado',
+  Archived: 'Arquivado',
+  Draft: 'Rascunho',
+};
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 
 @Component({
@@ -27,6 +32,7 @@ export class ClassroomsPage {
   private readonly teacher = inject(TeacherService);
 
   protected readonly statusLabels = statusLabels;
+  protected readonly moduleStatusLabels = moduleStatusLabels;
   protected readonly plural = plural;
   protected readonly formatLastAccess = formatLastAccess;
   protected readonly classrooms = signal<ClassroomSummary[]>([]);

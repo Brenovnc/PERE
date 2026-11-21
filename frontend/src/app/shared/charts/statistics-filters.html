@@ -1,9 +1,25 @@
+<!-- "Indisponível" badge: the explanation is a tooltip, shown on hover, keyboard focus and touch. -->
+<ng-template #unavailable let-id>
+  <span
+    #badge
+    class="unavailable"
+    tabindex="0"
+    [attr.aria-describedby]="id"
+    (keydown.escape)="badge.blur()"
+    >Indisponível</span
+  >
+  <span role="tooltip" class="tip" [id]="id">Não se aplica a este gráfico</span>
+</ng-template>
+
 <div class="filters">
   <label class="field" [attr.data-disabled]="disablePeriod() || null">
     <span class="field-label"
       >Período
       @if (disablePeriod()) {
-        <span class="unavailable">Indisponível</span>
+        <ng-container
+          [ngTemplateOutlet]="unavailable"
+          [ngTemplateOutletContext]="{ $implicit: 'tip-period' }"
+        />
       }
     </span>
     <select #period [disabled]="disablePeriod()" (change)="changePeriod(period.value)">
@@ -14,12 +30,19 @@
       }
       <option value="custom" [selected]="value().custom">Personalizado</option>
     </select>
-    <small class="help" [attr.data-visible]="disablePeriod()">Não se aplica a este gráfico</small>
   </label>
 
   @if (value().custom) {
     <label class="field" [attr.data-disabled]="disablePeriod() || null">
-      <span class="field-label">De</span>
+      <span class="field-label"
+        >De
+        @if (disablePeriod()) {
+          <ng-container
+            [ngTemplateOutlet]="unavailable"
+            [ngTemplateOutletContext]="{ $implicit: 'tip-from' }"
+          />
+        }
+      </span>
       <input
         #from
         type="date"
@@ -29,10 +52,17 @@
         [value]="value().from ?? ''"
         (change)="update({ from: from.value || undefined })"
       />
-      <small class="help" [attr.data-visible]="disablePeriod()">Não se aplica a este gráfico</small>
     </label>
     <label class="field" [attr.data-disabled]="disablePeriod() || null">
-      <span class="field-label">Até</span>
+      <span class="field-label"
+        >Até
+        @if (disablePeriod()) {
+          <ng-container
+            [ngTemplateOutlet]="unavailable"
+            [ngTemplateOutletContext]="{ $implicit: 'tip-to' }"
+          />
+        }
+      </span>
       <input
         #to
         type="date"
@@ -42,7 +72,6 @@
         [value]="value().to ?? ''"
         (change)="update({ to: to.value || undefined })"
       />
-      <small class="help" [attr.data-visible]="disablePeriod()">Não se aplica a este gráfico</small>
     </label>
   }
 
@@ -56,14 +85,16 @@
         </option>
       }
     </select>
-    <small class="help" data-visible="false">Não se aplica a este gráfico</small>
   </label>
 
   <label class="field" [attr.data-disabled]="disableActivityType() || null">
     <span class="field-label"
       >Tipo de atividade
       @if (disableActivityType()) {
-        <span class="unavailable">Indisponível</span>
+        <ng-container
+          [ngTemplateOutlet]="unavailable"
+          [ngTemplateOutletContext]="{ $implicit: 'tip-type' }"
+        />
       }
     </span>
     <select
@@ -78,9 +109,6 @@
         </option>
       }
     </select>
-    <small class="help" [attr.data-visible]="disableActivityType()"
-      >Não se aplica a este gráfico</small
-    >
   </label>
 
   @if (showMinAttempts()) {
@@ -88,7 +116,10 @@
       <span class="field-label"
         >Mínimo de tentativas por conceito
         @if (disableMinAttempts()) {
-          <span class="unavailable">Indisponível</span>
+          <ng-container
+            [ngTemplateOutlet]="unavailable"
+            [ngTemplateOutletContext]="{ $implicit: 'tip-attempts' }"
+          />
         }
       </span>
       <select #attempts [disabled]="disableMinAttempts()" (change)="setMinAttempts(attempts.value)">
@@ -98,11 +129,10 @@
           </option>
         }
       </select>
-      <small class="help" [attr.data-visible]="disableMinAttempts()"
-        >Não se aplica a este gráfico</small
-      >
     </label>
   }
 
-  <button type="button" class="clear" (click)="clear()">Limpar filtros</button>
+  @if (showClear()) {
+    <button type="button" class="btn" (click)="clear()">Limpar filtros</button>
+  }
 </div>

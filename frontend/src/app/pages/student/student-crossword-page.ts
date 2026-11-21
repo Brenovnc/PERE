@@ -24,7 +24,7 @@ import { ThemeToggle } from '../../shared/theme-toggle';
       class="mx-auto w-[min(100%-2rem,68rem)] pt-6 pb-12 max-[480px]:w-[min(100%-1.25rem,68rem)]"
     >
       <header class="mb-6 flex items-center justify-between gap-4 max-[480px]:items-start">
-        <button type="button" class="btn" (click)="back()">Voltar ao módulo</button>
+        <button type="button" class="btn btn-ghost" (click)="back()">← Voltar ao módulo</button>
         <app-theme-toggle />
       </header>
       <section class="card" aria-labelledby="crossword-title">
@@ -42,7 +42,7 @@ import { ThemeToggle } from '../../shared/theme-toggle';
           <p role="alert">{{ error() }}</p>
         }
         @if (!loading() && !error() && entries().length < 2) {
-          <div class="rounded-[0.7rem] border border-[var(--game-cell-border)] bg-surface p-4">
+          <div class="rounded-xl bg-surface-2 p-4">
             <p>Ainda não há palavras suficientes para montar a cruzadinha.</p>
             <p>
               {{

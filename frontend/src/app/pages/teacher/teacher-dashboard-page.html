@@ -16,20 +16,27 @@
   @if (error()) {
     <p role="alert" class="panel error">
       {{ error() }}
-      <button type="button" (click)="tryAgain()">Tentar novamente</button>
+      <button type="button" class="btn" (click)="tryAgain()">Tentar novamente</button>
     </p>
   }
   @if (!loading() && classrooms().length === 0 && !error()) {
     <section class="panel empty">
       <h2>Você ainda não tem turmas ativas.</h2>
-      <a class="button-link" routerLink="/teacher/classrooms">Criar turma</a>
+      <a class="btn btn-primary" routerLink="/teacher/classrooms">Criar turma</a>
     </section>
   }
 
   @if (selected()) {
     <section class="panel filter-card">
-      <h2>Filtros</h2>
+      <div class="filter-head">
+        <h2>Filtros</h2>
+        <button type="button" class="btn btn-ghost" (click)="statisticsFilters.clear()">
+          Limpar filtros
+        </button>
+      </div>
       <app-statistics-filters
+        #statisticsFilters
+        [showClear]="false"
         [(value)]="filters"
         [modules]="modules()"
         [showMinAttempts]="true"
@@ -126,7 +133,7 @@
                     <td>{{ formatLastAccess(student.lastAccessAtUtc) }}</td>
                     <td>
                       <a
-                        class="button-link small"
+                        class="btn min-h-10 py-1.5"
                         [routerLink]="[
                           '/teacher/classrooms',
                           classroomId(),

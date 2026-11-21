@@ -2,10 +2,10 @@
   <app-page-header eyebrow="Perfil" title="Meu perfil" />
   <div class="content">
     @if (error()) {
-      <p role="alert">{{ error() }}</p>
+      <p role="alert" class="banner-error">{{ error() }}</p>
     }
     @if (message()) {
-      <p role="status" aria-live="polite">{{ message() }}</p>
+      <p role="status" aria-live="polite" class="banner-success">{{ message() }}</p>
     }
 
     <section class="card-panel">
@@ -30,7 +30,7 @@
         @if (profile() && !profile()?.education && !profile()?.institution) {
           <p>Complete seu perfil adicionando formação e instituição.</p>
         }
-        <button type="button" (click)="startEditing()">Editar perfil</button>
+        <button type="button" class="btn" (click)="startEditing()">Editar perfil</button>
       } @else {
         <form (submit)="save($event)">
           <label
@@ -52,8 +52,12 @@
               [value]="profile()?.institution ?? ''"
           /></label>
           <div class="actions">
-            <button type="submit" [disabled]="busy()">{{ busy() ? 'Salvando…' : 'Salvar' }}</button>
-            <button type="button" [disabled]="busy()" (click)="editing.set(false)">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="busy()">
+              {{ busy() ? 'Salvando…' : 'Salvar' }}
+            </button>
+            <button type="button" class="btn" [disabled]="busy()" (click)="editing.set(false)">
+              Cancelar
+            </button>
           </div>
         </form>
       }
@@ -87,11 +91,11 @@
             autocomplete="new-password"
             required
         /></label>
-        <button type="submit" [disabled]="busy()">
+        <button type="submit" class="btn btn-primary" [disabled]="busy()">
           {{ busy() ? 'Salvando…' : 'Atualizar senha' }}
         </button>
       </form>
     </section>
-    <button type="button" (click)="logout()">Sair da conta</button>
+    <button type="button" class="btn btn-ghost" (click)="logout()">Sair da conta</button>
   </div>
 </main>

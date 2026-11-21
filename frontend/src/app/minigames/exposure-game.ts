@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { ActivityAnswer, ExposureActivity } from '../core/study.models';
+import { HelpPopover } from '../shared/help-popover';
 
 type Piece =
   | { kind: 'text'; text: string }
@@ -8,74 +9,137 @@ type Piece =
 
 @Component({
   selector: 'app-exposure-game',
+  imports: [HelpPopover],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section aria-labelledby="exposure-title">
-      <h2 id="exposure-title">Leia e explore</h2>
-      <p class="text-[1.2rem] leading-[2.4] [overflow-wrap:anywhere]">
+      <div class="game-head">
+        <h2 id="exposure-title" class="game-label">Leitura</h2>
+        <app-help-popover>
+          <p>
+            Leia o texto. As palavras-chave estão ocultas: revele uma de cada vez, clicando na
+            próxima palavra destacada ou no botão abaixo. Depois de revelar todas, conclua a
+            leitura.
+          </p>
+        </app-help-popover>
+      </div>
+      <p class="reading">
         @for (piece of pieces(); track $index) {
           @switch (piece.kind) {
             @case ('text') {
               <span>{{ piece.text }}</span>
             }
             @case ('revealed') {
-              <mark class="rounded-[0.25rem] bg-surface-2 px-[0.2rem] text-text">{{
-                piece.text
-              }}</mark>
+              <mark>{{ piece.text }}</mark>
             }
             @case ('next') {
               <button
                 type="button"
-                class="hidden-keyword cursor-pointer"
+                class="keyword keyword-next"
                 [disabled]="disabled()"
                 [attr.aria-label]="'Revelar palavra-chave ' + piece.keywordNumber"
                 (click)="reveal.emit()"
               >
-                ????
+                ?
               </button>
             }
             @case ('hidden') {
               <span
-                class="hidden-keyword"
+                class="keyword"
                 [attr.aria-label]="'Palavra-chave ' + piece.keywordNumber + ' oculta'"
-                >????</span
+                >?</span
               >
             }
           }
         }
       </p>
-      <p aria-live="polite">
-        {{ revealedCount() }} de {{ activity().payload.keywordCount }} palavras-chave reveladas
-      </p>
-      <div class="flex flex-wrap gap-3">
+      <div class="game-foot">
+        <div class="mr-auto flex flex-wrap items-center gap-3">
+          <span class="flex flex-wrap gap-1.5" aria-hidden="true">
+            @for (dot of dots(); track $index) {
+              <span class="dot" [class.dot-filled]="dot"></span>
+            }
+          </span>
+          <p class="m-0 text-[0.875rem] text-muted" aria-live="polite">
+            {{ revealedCount() }} de {{ activity().payload.keywordCount }} reveladas
+          </p>
+        </div>
         @if (!complete()) {
-          <button type="button" class="btn" [disabled]="disabled()" (click)="reveal.emit()">
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="disabled()"
+            (click)="reveal.emit()"
+          >
             Revelar próxima palavra
           </button>
+        } @else {
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="disabled()"
+            (click)="answered.emit({ answer: { completed: true }, hintsUsed: 0 })"
+          >
+            Concluir leitura
+          </button>
         }
-        <button
-          type="button"
-          class="btn"
-          [disabled]="disabled() || !complete()"
-          (click)="answered.emit({ answer: { completed: true }, hintsUsed: 0 })"
-        >
-          Concluir exposição
-        </button>
       </div>
     </section>
   `,
   styles: `
-    .hidden-keyword {
+    .reading {
+      margin: 0;
+      color: var(--text-heading);
+      font-family: var(--font-display);
+      font-size: clamp(1.25rem, 2.4vw, 1.375rem);
+      line-height: 1.9;
+      overflow-wrap: anywhere;
+    }
+
+    mark {
+      border-radius: 0.3rem;
+      padding: 0 0.25rem;
+      color: var(--text-heading);
+      background: var(--accent-soft);
+    }
+
+    .keyword {
       display: inline-block;
-      min-width: 4.5rem;
-      margin: 0 0.2rem;
-      border: 1px dashed var(--border);
-      border-radius: 0.4rem;
-      padding: 0.15rem 0.5rem;
-      color: var(--text);
-      background: var(--surface-2);
+      min-width: 3.5rem;
+      margin: 0 0.15rem;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      padding: 0 0.75rem;
+      color: var(--text-muted);
+      background: var(--surface-3);
       font: inherit;
+      line-height: 1.6;
       text-align: center;
+      vertical-align: baseline;
+    }
+
+    .keyword-next {
+      border-color: var(--select);
+      color: var(--text-heading);
+      background: var(--select-soft);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .keyword-next:disabled {
+      cursor: wait;
+    }
+
+    .dot {
+      width: 0.625rem;
+      height: 0.625rem;
+      border: 1px solid var(--border-strong);
+      border-radius: 50%;
+    }
+
+    .dot-filled {
+      border-color: var(--accent);
+      background: var(--accent);
     }
   `,
 })
@@ -91,6 +155,13 @@ export class ExposureGame {
   });
   protected readonly complete = computed(
     () => this.revealedCount() >= this.activity().payload.keywordCount,
+  );
+  /** One dot per keyword, filled once it is revealed. */
+  protected readonly dots = computed(() =>
+    Array.from(
+      { length: this.activity().payload.keywordCount },
+      (_, index) => index < this.revealedCount(),
+    ),
   );
 
   /** Only the first hidden keyword after the revealed ones is clickable. */

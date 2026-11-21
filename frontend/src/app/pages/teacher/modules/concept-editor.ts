@@ -1,6 +1,17 @@
-import { ChangeDetectionStrategy, Component, computed, input, model, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  ElementRef,
+  input,
+  model,
+  output,
+  signal,
+  viewChildren,
+} from '@angular/core';
 import { ModuleDetails } from '../../../core/teacher.models';
 import { EmptyState } from '../../../shared/empty-state';
+import { HelpPopover } from '../../../shared/help-popover';
 import { blankConcept, ConceptDraft, lines } from './concept-draft';
 
 type ListKey = 'recognitionActivities' | 'fillBlankActivities' | 'orderingActivities';
@@ -8,7 +19,7 @@ type ListKey = 'recognitionActivities' | 'fillBlankActivities' | 'orderingActivi
 /** Form for one concept: basics, keywords, clues, prerequisites, activities and crossword word. */
 @Component({
   selector: 'app-concept-editor',
-  imports: [EmptyState],
+  imports: [EmptyState, HelpPopover],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './concept-editor.html',
   styleUrl: './modules.css',
@@ -21,12 +32,26 @@ export class ConceptEditor {
   readonly duplicate = output();
   readonly deactivate = output();
 
+  private readonly sections = viewChildren<ElementRef<HTMLDetailsElement>>('section');
+  protected readonly allOpen = signal(false);
+
   /** Other active concepts that can be prerequisites. */
   protected readonly otherConcepts = computed(() =>
     this.module().concepts.filter((c) => c.isActive && c.id !== this.value().id),
   );
   protected readonly keywordCount = computed(() => lines(this.value().keywords).length);
   protected readonly clueCount = computed(() => lines(this.value().clues).length);
+
+  protected toggleAll(): void {
+    const open = !this.allOpen();
+    for (const section of this.sections()) section.nativeElement.open = open;
+    this.allOpen.set(open);
+  }
+
+  /** Keeps the "Expandir tudo" label right when the teacher opens or closes a section by hand. */
+  protected syncOpen(): void {
+    this.allOpen.set(this.sections().every((section) => section.nativeElement.open));
+  }
 
   protected patch(partial: Partial<ConceptDraft>): void {
     this.value.update((current) => ({ ...current, ...partial }));

@@ -10,6 +10,8 @@ export interface StackedValue {
   label: string;
   value: number;
   color: string;
+  /** Color of the number drawn over the segment. */
+  textColor: string;
 }
 
 /** Shared styles of the three charts. */
@@ -18,24 +20,27 @@ const chartStyles = `
     display: flex;
     flex-direction: column;
     min-width: 0;
-    min-height: clamp(22rem, 55vh, 40rem);
-    padding: clamp(1.25rem, 3vw, 2rem);
-    border: 1px solid var(--border);
-    border-radius: 14px;
+    border-radius: 0.75rem;
     color: var(--text);
     background: var(--surface);
   }
   h3 { margin: 0 0 0.8rem; font-size: 1.25rem; }
   .empty { margin: 0.5rem 0; color: var(--text); }
-  .svg { display: block; width: 100%; height: clamp(15rem, 40vh, 30rem); overflow: visible; }
-  .stacked { display: block; width: 100%; height: clamp(14rem, 35vh, 24rem); }
+  .svg { display: block; width: 100%; height: auto; max-height: 28rem; overflow: visible; }
+  .stacked {
+    display: flex; width: 100%; height: 2.6rem; overflow: hidden; border-radius: 0.5rem;
+  }
+  .segment {
+    display: flex; min-width: 0; align-items: center; justify-content: center;
+    font-size: 0.875rem; font-weight: 600; font-variant-numeric: tabular-nums;
+  }
   svg line { stroke: var(--text-muted); stroke-width: 1; }
   svg text { fill: var(--text); font-size: 14px; }
   .svg path { fill: none; stroke-width: 3; }
   .bar { fill: var(--chart-1); }
   .legend {
     display: flex; flex-wrap: wrap; gap: 0.75rem 1.3rem;
-    margin: 0.5rem 0 0; padding: 0; list-style: none; font-size: 1rem;
+    margin: 0.75rem 0 0; padding: 0; list-style: none; font-size: 1rem;
   }
   .swatch {
     display: inline-block; width: 0.7rem; height: 0.7rem; margin-right: 0.35rem;
@@ -52,7 +57,13 @@ const chartStyles = `
       @if (!hasData()) {
         <p class="empty">Ainda não há atividades neste período</p>
       } @else {
-        <svg class="svg" viewBox="0 0 600 250" role="img" [attr.aria-label]="title()">
+        <svg
+          class="svg"
+          viewBox="46 0 520 250"
+          preserveAspectRatio="xMinYMid meet"
+          role="img"
+          [attr.aria-label]="title()"
+        >
           <line x1="46" y1="38" x2="46" y2="204" />
           <line x1="46" y1="204" x2="554" y2="204" />
           <text x="48" y="22">Atividades</text>
@@ -172,7 +183,13 @@ export class LineChart {
       @if (!showData()) {
         <p class="empty">{{ emptyText() }}</p>
       } @else {
-        <svg class="svg" viewBox="0 0 600 250" role="img" [attr.aria-label]="title()">
+        <svg
+          class="svg"
+          viewBox="46 0 520 250"
+          preserveAspectRatio="xMinYMid meet"
+          role="img"
+          [attr.aria-label]="title()"
+        >
           <line x1="46" y1="38" x2="46" y2="204" />
           <line x1="46" y1="204" x2="554" y2="204" />
           @for (bar of bars(); track $index) {
@@ -262,25 +279,22 @@ export class BarChart {
       @if (total() === 0) {
         <p class="empty">Ainda não há dados neste período</p>
       } @else {
-        <svg class="stacked" viewBox="0 0 600 135" role="img" [attr.aria-label]="title()">
-          <text x="20" y="22">{{ title() }}</text>
-          @for (segment of segments(); track segment.label) {
-            <g>
-              <rect
-                [attr.x]="segment.x"
-                y="42"
-                [attr.width]="segment.width"
-                height="42"
-                [attr.fill]="segment.color"
-              />
-              @if (segment.width > 48) {
-                <text [attr.x]="segment.x + segment.width / 2" y="68" text-anchor="middle">
-                  {{ segment.value }}
-                </text>
-              }
-            </g>
+        <div class="stacked" role="img" [attr.aria-label]="ariaLabel()">
+          @for (item of values(); track item.label) {
+            @if (item.value > 0) {
+              <div
+                class="segment"
+                [style.flex]="item.value + ' 1 0'"
+                [style.background]="item.color"
+                [style.color]="item.textColor"
+              >
+                @if (item.value / total() > 0.086) {
+                  {{ item.value }}
+                }
+              </div>
+            }
           }
-        </svg>
+        </div>
         <ul class="legend">
           @for (item of values(); track item.label) {
             <li>
@@ -323,13 +337,8 @@ export class StackedBarChart {
     this.values().reduce((sum, item) => sum + item.value, 0),
   );
 
-  protected readonly segments = computed(() => {
-    let offset = 0;
-    return this.values().map((item) => {
-      const width = (560 * item.value) / this.total();
-      const segment = { ...item, x: 20 + offset, width };
-      offset += width;
-      return segment;
-    });
+  protected readonly ariaLabel = computed(() => {
+    const parts = this.values().map((item) => `${item.label} ${item.value}`);
+    return `${this.title()}: ${parts.join(', ')}`;
   });
 }

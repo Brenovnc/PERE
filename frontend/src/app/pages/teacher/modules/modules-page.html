@@ -10,7 +10,7 @@
   }
 
   @if (selected(); as module) {
-    <button type="button" class="back" (click)="back()">
+    <button type="button" class="btn btn-ghost back" (click)="back()">
       ← {{ fromCommunity() ? 'Comunidade' : 'Meus módulos' }}
     </button>
 
@@ -30,19 +30,14 @@
           <h2>{{ module.title }}</h2>
         </div>
         <div class="actions">
-          <button
-            type="button"
-            class="secondary"
-            [disabled]="busy()"
-            (click)="exportModule(module.id)"
-          >
+          <button type="button" class="btn" [disabled]="busy()" (click)="exportModule(module.id)">
             Exportar JSON
           </button>
-          <button type="button" class="secondary" [disabled]="busy()" (click)="duplicateModule()">
+          <button type="button" class="btn" [disabled]="busy()" (click)="duplicateModule()">
             Duplicar módulo
           </button>
           @if (!module.isCommunityListing && !isArchived()) {
-            <button type="button" class="danger" [disabled]="busy()" (click)="archive()">
+            <button type="button" class="btn btn-danger" [disabled]="busy()" (click)="archive()">
               Arquivar
             </button>
           }
@@ -50,7 +45,7 @@
       </div>
       <form class="form-grid" (submit)="saveModule($event)">
         <app-module-fields [(value)]="moduleDraft" />
-        <button type="submit" [disabled]="busy()">Salvar módulo</button>
+        <button type="submit" class="btn btn-primary" [disabled]="busy()">Salvar módulo</button>
       </form>
     </section>
 
@@ -63,6 +58,7 @@
         @if (!module.isCommunityListing) {
           <button
             type="button"
+            class="btn btn-primary"
             [disabled]="busy() || !validation()?.isValid || isArchived()"
             (click)="publish()"
           >
@@ -89,7 +85,7 @@
       <section class="panel">
         <div class="title-row">
           <h2>Conceitos</h2>
-          <button type="button" class="secondary" (click)="newConcept()">+ Novo conceito</button>
+          <button type="button" class="btn" (click)="newConcept()">+ Novo conceito</button>
         </div>
         @if (module.concepts.length === 0) {
           <p class="muted">Adicione conceitos para compor o módulo.</p>
@@ -129,7 +125,7 @@
         <h2>Novo módulo</h2>
         <form class="form-grid" (submit)="createModule($event)">
           <app-module-fields [(value)]="moduleDraft" />
-          <button type="submit" [disabled]="busy()">Criar módulo</button>
+          <button type="submit" class="btn btn-primary" [disabled]="busy()">Criar módulo</button>
         </form>
       </section>
       <section class="panel">
@@ -162,7 +158,7 @@
                 </button>
                 <button
                   type="button"
-                  class="secondary"
+                  class="btn"
                   [disabled]="busy()"
                   (click)="exportModule(item.id)"
                 >

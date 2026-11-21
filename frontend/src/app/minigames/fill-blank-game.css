@@ -1,6 +1,10 @@
 .sentence {
-  font-size: 1.15rem;
-  line-height: 2.8;
+  margin: 0 0 1.75rem;
+  color: var(--text-heading);
+  font-family: var(--font-display);
+  font-size: clamp(1.375rem, 2.8vw, 1.75rem);
+  line-height: 2.3;
+  overflow-wrap: anywhere;
 }
 
 .slot-target {
@@ -11,24 +15,61 @@
 }
 
 .slot {
-  min-width: 8rem;
-  min-height: 2.75rem;
+  display: inline-flex;
+  min-width: 7.5rem;
+  max-width: 100%;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   margin: 0 0.25rem;
   border: 1px dashed var(--border-strong);
-  border-radius: 0.4rem;
-  padding: 0.45rem;
+  border-radius: 0.5rem;
+  padding: 0 0.75rem;
   color: var(--text);
   background: var(--surface-2);
   font: inherit;
-  line-height: 1.55;
+  font-size: 1.0625rem;
+  line-height: 1.2;
   cursor: pointer;
+}
+
+/* The slot that receives the next word clicked in the bank. */
+.slot.slot-active {
+  border-style: dashed;
+  border-color: var(--select);
+  background: var(--select-soft);
+}
+
+.slot.slot-filled {
+  border-style: solid;
+  border-color: var(--select);
+  color: var(--text-heading);
+  background: var(--select-soft);
+  font-weight: 600;
+}
+
+.slot-number,
+.slot-remove {
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-weight: 600;
+}
+
+.slot-number {
+  font-size: 0.8125rem;
+}
+
+.slot-remove {
+  font-size: 1.125rem;
+  line-height: 1;
 }
 
 /* The slot under the dragged word. */
 .slot-target.cdk-drop-list-dragging .slot {
-  outline: 3px solid var(--focus-ring);
-  outline-offset: 2px;
-  background: var(--game-cell-active-bg);
+  border-style: solid;
+  border-color: var(--select);
+  background: var(--select-soft);
 }
 
 /* CDK moves the placeholder into the list under the pointer; inside the sentence it would push the text around. */
@@ -36,29 +77,52 @@
   display: none;
 }
 
+.bank {
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: var(--surface-2);
+}
+
+.bank-title {
+  margin: 0 0 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
 .options {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
+  gap: 0.75rem;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .option {
-  padding: 0.55rem 0.8rem;
-}
-
-.option[aria-pressed='true'] {
+  max-width: 100%;
+  min-height: 3rem;
   border-color: var(--border-strong);
-  background: var(--accent-soft);
-  outline: 3px solid var(--focus-ring);
-  outline-offset: 1px;
+  padding: 0 1.25rem;
+  color: var(--text);
+  background: var(--surface-1);
+  font-size: 1.125rem;
+  font-weight: 600;
 }
 
-.option:disabled {
+.option:hover:not(:disabled) {
+  border-color: var(--select);
+  background: var(--surface-1);
+}
+
+/* A used word leaves a same-sized ghost so the other words do not move. */
+.option.option-used {
   border-style: dashed;
-  text-decoration: line-through;
-  cursor: not-allowed;
+  border-color: var(--border);
+  color: transparent;
+  background: transparent;
+  opacity: 1;
+  cursor: default;
 }
 
 .options .cdk-drag-placeholder {
@@ -67,4 +131,10 @@
 
 .cdk-drag-preview {
   opacity: 0.85;
+}
+
+.status {
+  margin: 0 auto 0 0;
+  color: var(--text-muted);
+  font-size: 0.875rem;
 }

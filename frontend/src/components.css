@@ -3,38 +3,85 @@
  * components layer, so any Tailwind utility placed next to them still wins.
  */
 
-.btn {
+/* Default button is the secondary one (outline). Only one btn-primary per area. */
+.btn,
+.btn-secondary {
   min-height: 2.75rem;
-  border: 1px solid var(--border-strong);
-  border-radius: 0.55rem;
-  padding: 0.6rem 0.9rem;
-  color: var(--btn-cta-text);
-  background: var(--btn-cta-bg);
+  border: 1px solid var(--btn-secondary-border);
+  border-radius: 0.5rem;
+  padding: 0.6rem 1rem;
+  color: var(--btn-secondary-text);
+  background: var(--btn-secondary-bg);
   font: inherit;
+  font-weight: 600;
   cursor: pointer;
 }
 
-.btn:disabled {
-  cursor: wait;
+/* Links and file-input labels styled as buttons need a box so min-height applies. */
+a.btn,
+label.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
 }
 
-.btn-secondary {
-  border-color: var(--btn-secondary-border);
-  color: var(--btn-secondary-text);
-  background: var(--btn-secondary-bg);
+.btn:hover:not(:disabled),
+.btn-secondary:hover:not(:disabled) {
+  background: var(--surface-3);
 }
 
-.btn-primary {
+.btn-primary,
+.btn-primary:hover:not(:disabled) {
   border-color: var(--btn-primary-bg);
   color: var(--btn-primary-text);
   background: var(--btn-primary-bg);
 }
 
+.btn-primary:hover:not(:disabled) {
+  border-color: var(--btn-hover);
+  background: var(--btn-hover);
+}
+
+.btn-ghost,
+.btn-ghost:hover:not(:disabled) {
+  border-color: transparent;
+  color: var(--text);
+  background: transparent;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+/* Destructive actions are never filled. */
+.btn-danger,
+.btn-danger:hover:not(:disabled) {
+  border-color: var(--danger-border);
+  color: var(--danger-text);
+  background: transparent;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--danger-bg);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* "wait" only while a request is being sent. */
+.btn[aria-busy='true']:disabled {
+  cursor: wait;
+}
+
 .card {
   border: 1px solid var(--border);
-  border-radius: 0.9rem;
+  border-radius: 0.75rem;
   padding: clamp(1rem, 3vw, 1.5rem);
   background: var(--surface);
+  box-shadow: var(--card-shadow);
   overflow-wrap: anywhere;
 }
 
@@ -42,11 +89,43 @@
   min-width: 0;
   min-height: 2.75rem;
   border: 1px solid var(--border-strong);
-  border-radius: 0.55rem;
+  border-radius: 0.5rem;
   padding: 0.55rem 0.7rem;
   color: var(--text);
-  background: var(--surface-2);
+  background: var(--field-bg);
   font: inherit;
+}
+
+/* Minigame layout: label row on top, the main content, then a footer with the main action. */
+.game-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.game-label {
+  display: inline-block;
+  margin: 0;
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.4;
+}
+
+.game-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
 }
 
 /* Container of the teacher pages. */
@@ -57,13 +136,23 @@
   color: var(--text);
 }
 
+/*
+ * Vertical rhythm of the teacher pages: the space under the header comes only from the header's
+ * own bottom margin, so the first block has no top margin. Blocks end with 1rem below them, and
+ * occasional messages (banners, "Salvando…") use the same 1rem when they appear.
+ */
+.teacher-page > :is(p, .notice),
+.teacher-page > .content > :is(p, .notice) {
+  margin: 0 0 1rem;
+}
+
 /* Success and error banners of the teacher pages. */
 .banner-success,
 .banner-error,
 .banner-warning {
   padding: 0.75rem 1rem;
   border: 1px solid;
-  border-radius: 0.65rem;
+  border-radius: 0.5rem;
 }
 
 .banner-success {
@@ -82,4 +171,102 @@
   border-color: var(--warning-border);
   color: var(--warning-text);
   background: var(--warning-bg);
+}
+
+/* Every select looks like a .field, with a Lucide chevron-down (ISC license) as the arrow. */
+:root,
+:root[data-theme='dark'] {
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b1a9a0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+:root[data-theme='light'] {
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23665e56' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 2.75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.5rem;
+  padding: 0 2.75rem 0 0.75rem;
+  color: var(--text);
+  background-color: var(--field-bg);
+  background-image: var(--chevron);
+  background-repeat: no-repeat;
+  background-position: right 0.875rem center;
+  background-size: 1rem;
+  font: inherit;
+  cursor: pointer;
+  appearance: none;
+}
+
+select:hover:not(:disabled) {
+  border-color: var(--text-muted);
+}
+
+select:disabled {
+  border-style: dashed;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Progressive enhancement: where supported, the option list is styled too. */
+@supports (appearance: base-select) {
+  select,
+  select::picker(select) {
+    appearance: base-select;
+  }
+
+  select {
+    display: flex;
+    align-items: center;
+    padding-right: 0.875rem;
+    background-image: none;
+  }
+
+  select::picker-icon {
+    width: 1rem;
+    height: 1rem;
+    margin-left: auto;
+    background: var(--chevron) center / contain no-repeat;
+    content: '';
+    transition: rotate 0.2s ease;
+  }
+
+  select:open::picker-icon {
+    rotate: 180deg;
+  }
+
+  select::picker(select) {
+    margin-top: 0.25rem;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 0.25rem;
+    background: var(--surface-2);
+    box-shadow: 0 0.5rem 1.5rem var(--shadow);
+  }
+
+  select option {
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  select option:hover,
+  select option:focus-visible {
+    background: var(--surface-3);
+  }
+
+  select option:checked {
+    color: var(--text-heading);
+    font-weight: 600;
+  }
+
+  /* The built-in check mark would add a second signal next to the bold text. */
+  select option::checkmark {
+    display: none;
+  }
 }

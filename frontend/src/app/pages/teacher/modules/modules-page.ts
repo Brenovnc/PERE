@@ -251,7 +251,7 @@ export class ModulesPage implements OnInit {
     if (!concept.isActive) return 'Desativado';
     const active = (list: { isActive: boolean }[]) => list.filter((item) => item.isActive).length;
     return (
-      `${concept.keywords.length} keywords · ${concept.clues.length}/3 pistas · ` +
+      `${concept.keywords.length} palavras-chave ·${concept.clues.length}/3 pistas · ` +
       `${active(concept.recognitionActivities)}/3 verdadeiro/falso · ` +
       `${active(concept.fillBlankActivities)}/3 lacunas`
     );

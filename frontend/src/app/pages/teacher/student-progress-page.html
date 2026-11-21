@@ -1,6 +1,9 @@
 <main class="teacher-page">
   <app-page-header eyebrow="Detalhes do aluno" [title]="data()?.name || 'Aluno'">
-    <a class="back" routerLink="/teacher/dashboard" [queryParams]="{ classroom: classroomId() }"
+    <a
+      class="btn btn-ghost"
+      routerLink="/teacher/dashboard"
+      [queryParams]="{ classroom: classroomId() }"
       >← Progresso da turma</a
     >
   </app-page-header>
@@ -20,7 +23,7 @@
   @if (statsError()) {
     <p role="alert">
       {{ statsError() }}
-      <button type="button" class="retry" (click)="tryAgain()">Tentar novamente</button>
+      <button type="button" class="btn retry" (click)="tryAgain()">Tentar novamente</button>
     </p>
   }
   @if (stats()) {

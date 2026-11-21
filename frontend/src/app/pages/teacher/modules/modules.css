@@ -12,11 +12,9 @@
 
 .eyebrow {
   margin: 0;
-  color: var(--accent);
-  font-size: 0.76rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
 }
 
 .columns,
@@ -36,8 +34,9 @@
   margin-bottom: 1rem;
   padding: 1.25rem;
   border: 1px solid var(--border);
-  border-radius: 1rem;
+  border-radius: 0.75rem;
   background: var(--surface);
+  box-shadow: var(--card-shadow);
 }
 
 .panel h2 {
@@ -67,14 +66,13 @@ label {
 }
 
 input,
-textarea,
-select {
+textarea {
   width: 100%;
   border: 1px solid var(--border-strong);
   border-radius: 0.5rem;
   padding: 0.65rem 0.7rem;
   color: var(--text);
-  background: var(--accent-soft);
+  background: var(--field-bg);
   font: inherit;
 }
 
@@ -82,43 +80,9 @@ textarea {
   resize: vertical;
 }
 
-button {
-  border: 1px solid var(--border);
-  border-radius: 0.55rem;
-  padding: 0.65rem 0.9rem;
-  color: var(--btn-cta-text);
-  background: var(--btn-cta-bg);
-  font: inherit;
-  font-weight: 650;
-  cursor: pointer;
-}
-
-button:disabled {
-  cursor: not-allowed;
-}
-
-button.secondary {
-  border-color: var(--btn-secondary-border);
-  color: var(--btn-secondary-text);
-  background: var(--btn-secondary-bg);
-}
-
-button.danger {
-  border-color: var(--danger-border);
-  color: var(--danger-text);
-  background: var(--danger-bg);
-}
-
-button.back,
-button.text-button {
-  border: 0;
-  padding: 0.4rem 0;
-  color: var(--text);
-  background: transparent;
-}
-
-button.back {
-  margin: 0 0 0.8rem;
+/* Buttons use the shared classes (btn, btn-primary, btn-danger, btn-ghost) from components.css. */
+.back {
+  margin: 0 0 1rem;
 }
 
 .actions,
@@ -134,7 +98,7 @@ button.back {
 
 .muted,
 small {
-  color: var(--accent);
+  color: var(--text-muted);
   font-size: 0.84rem;
   font-weight: 400;
 }
@@ -143,7 +107,7 @@ small {
   margin: 0;
   padding: 0.75rem 1rem 0.75rem 2rem;
   border: 1px solid var(--warning-border);
-  border-radius: 0.65rem;
+  border-radius: 0.5rem;
   color: var(--warning-text);
   background: var(--warning-bg);
 }
@@ -175,13 +139,19 @@ small {
   gap: 0.75rem;
   width: 100%;
   min-width: 0;
+  min-height: 2.75rem;
   padding: 0.8rem;
-  border: 1px solid var(--border);
-  border-radius: 0.65rem;
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
   color: var(--text);
-  background: var(--surface-3);
+  background: var(--surface-2);
   font-weight: 650;
   text-align: left;
+  cursor: pointer;
+}
+
+.module-link:hover {
+  background: var(--surface-3);
 }
 
 .module-link > span:first-child {
@@ -200,7 +170,7 @@ small {
 
 .concept-list .selected-concept {
   border-color: var(--border-strong);
-  box-shadow: inset 0.2rem 0 var(--shadow);
+  box-shadow: inset 0.2rem 0 var(--accent);
   background: var(--accent-soft);
 }
 
@@ -223,31 +193,61 @@ small {
   gap: 1rem;
 }
 
+/* Grouped by background, not by another bordered box inside the panel. */
 .editor-section {
   min-width: 0;
   padding: 0.85rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: 0.7rem;
-  background: var(--surface);
+  border-radius: 0.75rem;
+  background: var(--surface-2);
 }
 
 .editor-section summary {
   display: flex;
-  justify-content: space-between;
-  gap: 1rem;
+  align-items: center;
+  gap: 0.75rem;
   color: var(--text);
   font-weight: 700;
+  list-style: none;
   cursor: pointer;
 }
 
-.editor-section summary span + span {
+.editor-section summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Chevron that turns when the section opens. */
+.editor-section summary::before {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+  background: var(--chevron) center / contain no-repeat;
+  content: '';
+  transition: rotate 0.2s ease;
+}
+
+.editor-section[open] summary::before {
+  rotate: 180deg;
+}
+
+.section-title {
+  min-width: 0;
+  flex: 1;
+}
+
+.section-status {
   font-size: 0.85rem;
   font-weight: 500;
   text-align: right;
 }
 
+.section-info {
+  display: inline-flex;
+  flex: none;
+  font-weight: 400;
+}
+
 .editor-section summary:focus-visible {
-  border-radius: 0.2rem;
+  border-radius: 0.5rem;
   outline: 3px solid var(--focus-ring);
   outline-offset: 3px;
 }
@@ -276,12 +276,11 @@ small {
   gap: 0.65rem;
   margin: 0.7rem 0 1rem;
   padding: 0.85rem;
-  border: 1px solid var(--border);
-  border-radius: 0.65rem;
-  background: var(--accent-soft);
+  border-radius: 0.75rem;
+  background: var(--surface);
 }
 
-.activity .text-button {
+.activity > button {
   justify-self: start;
 }
 
@@ -289,9 +288,8 @@ small {
 .feature-card {
   grid-column: 1 / -1;
   padding: 1rem 1.2rem;
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  background: var(--surface);
+  border-radius: 0.75rem;
+  background: var(--surface-2);
 }
 
 .feature-card h3 {

@@ -1,7 +1,17 @@
-import { ChangeDetectionStrategy, Component, inject, input, OnInit, signal } from '@angular/core';
+import {
+  afterRenderEffect,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  input,
+  OnInit,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { errorMessage, isApiError } from '../../core/api-error';
-import { AuthService } from '../../core/auth.service';
 import {
   ActivityAnswer,
   AnswerResponse,
@@ -12,10 +22,12 @@ import {
 import { STUDY_SOURCE } from '../../core/study-source';
 import { ActivityGame } from '../../minigames/activity-game';
 import { EmptyState } from '../../shared/empty-state';
-import { PageHeader } from '../../shared/page-header';
 import { reviewLabel } from '../../shared/review-date';
 import { SessionTimer } from '../../shared/session-timer';
 import { ThemeToggle } from '../../shared/theme-toggle';
+
+/** Mirrors the backend limit (and sessionLength in the visitor engine): at most 10 activities per session. */
+const SESSION_LENGTH = 10;
 
 interface Feedback {
   response: AnswerResponse;
@@ -62,12 +74,11 @@ function describeCorrectAnswer(
 
 @Component({
   selector: 'app-study-session-page',
-  imports: [PageHeader, ThemeToggle, SessionTimer, ActivityGame, EmptyState],
+  imports: [ThemeToggle, SessionTimer, ActivityGame, EmptyState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './study-session-page.html',
 })
 export class StudySessionPage implements OnInit {
-  protected readonly auth = inject(AuthService);
   private readonly study = inject(STUDY_SOURCE);
   protected readonly base = this.study.basePath;
   private readonly router = inject(Router);
@@ -83,6 +94,34 @@ export class StudySessionPage implements OnInit {
   protected readonly error = signal('');
   protected readonly notice = signal('');
   protected readonly reviewLabel = reviewLabel;
+  protected readonly sessionLength = SESSION_LENGTH;
+  protected readonly segments = Array.from({ length: SESSION_LENGTH }, (_, index) => index);
+
+  /**
+   * The backend raises totalActivities as activities are shown, so the bar always counts to the
+   * session limit. While the feedback is open, the answered activity is already counted as done.
+   */
+  protected readonly progress = computed(() => {
+    const session = this.session();
+    const done = Math.min(session?.completedActivities ?? 0, SESSION_LENGTH);
+    const inProgress = !!session?.activity && !this.feedback() && done < SESSION_LENGTH;
+    const number = inProgress ? done + 1 : done;
+    return {
+      done,
+      current: inProgress ? done : -1,
+      label: number > 0 ? `Atividade ${number} de ${SESSION_LENGTH}` : `0 de ${SESSION_LENGTH}`,
+    };
+  });
+
+  private readonly continueButton = viewChild<ElementRef<HTMLButtonElement>>('continueButton');
+
+  constructor() {
+    // Moves the focus to "Continuar" when the feedback appears, so Enter goes on.
+    afterRenderEffect(() => {
+      const button = this.continueButton()?.nativeElement;
+      if (button && !this.busy()) button.focus();
+    });
+  }
 
   ngOnInit(): void {
     void this.load();
@@ -206,16 +245,7 @@ export class StudySessionPage implements OnInit {
     }, 'A sessão já mudou de estado. O estado atual foi carregado.');
   }
 
-  protected progressText(session: StudySession): string {
-    const current = session.completedActivities + (session.activity ? 1 : 0);
-    return `${current} de ${Math.max(session.totalActivities, current)} atividades`;
-  }
-
   protected goTo(path: string): void {
     void this.router.navigateByUrl(path);
-  }
-
-  protected logout(): void {
-    void this.auth.logout();
   }
 }

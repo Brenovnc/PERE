@@ -1,65 +1,56 @@
 .filters {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 0.75rem;
-  margin: 1rem 0;
+  margin: 0 0 1rem;
   padding: 1rem;
-  border: 1px solid var(--border);
   border-radius: 0.75rem;
-  background: var(--surface);
+  /* Background instead of a border: the filters often sit inside a card. */
+  background: var(--surface-2);
 }
 
 .field {
   display: grid;
   align-content: start;
   gap: 0.3rem;
-  min-width: 9rem;
+  min-width: 12rem;
   color: var(--text);
   font-size: 0.88rem;
 }
 
 .field-label {
+  position: relative;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.45rem;
-  min-height: 1.25rem;
+  min-height: 1.5rem;
 }
 
-select,
 input {
   width: 100%;
   min-height: 2.6rem;
   border: 1px solid var(--border-strong);
-  border-radius: 0.4rem;
+  border-radius: 0.5rem;
   padding: 0.45rem 0.6rem;
   color: var(--text);
-  background: var(--surface-3);
+  background: var(--field-bg);
   font: inherit;
-}
-
-.clear {
-  min-height: 2.6rem;
-  padding: 0.45rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: 0.45rem;
-  color: var(--btn-secondary-text);
-  background: var(--btn-secondary-bg);
-  font: inherit;
-  cursor: pointer;
 }
 
 .unavailable {
   display: inline-block;
   padding: 0.12rem 0.4rem;
   border: 1px solid var(--warning-border);
-  border-radius: 99px;
+  border-radius: 999px;
   color: var(--warning-text);
   background: var(--warning-bg);
   font-size: 0.68rem;
   font-weight: 650;
   line-height: 1.3;
   white-space: nowrap;
+  cursor: help;
 }
 
 .field[data-disabled='true'] {
@@ -67,29 +58,52 @@ input {
   cursor: not-allowed;
 }
 
-.field[data-disabled='true'] select,
 .field[data-disabled='true'] input {
   border: 1px dashed var(--border-strong);
   color: var(--text-muted);
   cursor: not-allowed;
 }
 
-/* Reserves no space until the field is disabled, then fades in. */
-.help {
-  display: block;
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  color: var(--warning-text);
+/* Tooltip above the field, as wide as the field at most so it never leaves the screen. */
+.tip {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  z-index: 10;
+  width: max-content;
+  max-width: 100%;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--text);
+  background: var(--surface-3);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.25);
   font-size: 0.78rem;
   font-weight: 500;
-  line-height: 1.2;
-  transition:
-    max-height 150ms ease,
-    opacity 150ms ease;
+  line-height: 1.3;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 150ms ease;
 }
 
-.help[data-visible='true'] {
-  max-height: 1.2rem;
+/* Keeps the tooltip open while the pointer moves from the badge to it. */
+.tip::after {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  height: 0.6rem;
+  content: '';
+}
+
+.unavailable:hover + .tip,
+.unavailable:focus + .tip,
+.tip:hover {
+  visibility: visible;
   opacity: 1;
+}
+
+.unavailable:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }

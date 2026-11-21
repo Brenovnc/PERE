@@ -2,21 +2,48 @@
 <section class="panel">
   <div class="title-row">
     <h2>{{ draft.id ? 'Editar conceito' : 'Novo conceito' }}</h2>
-    @if (draft.id) {
-      <div class="actions">
-        <button type="button" class="secondary" [disabled]="busy()" (click)="duplicate.emit()">
+    <div class="actions">
+      <button
+        type="button"
+        class="btn btn-ghost"
+        [attr.aria-expanded]="allOpen()"
+        (click)="toggleAll()"
+      >
+        {{ allOpen() ? 'Recolher tudo' : 'Expandir tudo' }}
+      </button>
+      @if (draft.id) {
+        <button type="button" class="btn" [disabled]="busy()" (click)="duplicate.emit()">
           Duplicar
         </button>
-        <button type="button" class="danger" [disabled]="busy()" (click)="deactivate.emit()">
+        <button
+          type="button"
+          class="btn btn-danger"
+          [disabled]="busy()"
+          (click)="deactivate.emit()"
+        >
           Desativar
         </button>
-      </div>
-    }
+      }
+    </div>
   </div>
 
   <form class="concept-form" (submit)="submit($event)">
-    <details class="editor-section" open>
-      <summary>Informações básicas</summary>
+    <details #section class="editor-section" open (toggle)="syncOpen()">
+      <summary>
+        <span class="section-title">Informações básicas</span>
+        <span
+          class="section-info"
+          role="presentation"
+          (click)="$event.stopPropagation(); $event.preventDefault()"
+        >
+          <app-help-popover icon="i" label="Sobre Informações básicas">
+            <p>
+              O nome é a resposta que o aluno precisa lembrar. A definição é o texto da primeira
+              etapa (Leitura), em que as palavras-chave aparecem escondidas para o aluno revelar.
+            </p>
+          </app-help-popover>
+        </span>
+      </summary>
       <label
         >Nome<input
           #name
@@ -37,10 +64,24 @@
       </label>
     </details>
 
-    <details class="editor-section">
-      <summary>Keywords — {{ keywordCount() }}</summary>
+    <details #section class="editor-section" (toggle)="syncOpen()">
+      <summary>
+        <span class="section-title">Palavras-chave — {{ keywordCount() }}</span>
+        <span
+          class="section-info"
+          role="presentation"
+          (click)="$event.stopPropagation(); $event.preventDefault()"
+        >
+          <app-help-popover icon="i" label="Sobre Palavras-chave">
+            <p>
+              Termos da definição que ficam ocultos na Leitura e são revelados um a um. Precisa de
+              pelo menos 1 para publicar.
+            </p>
+          </app-help-popover>
+        </span>
+      </summary>
       <label
-        >Keywords <small>Uma por linha</small
+        >Palavras-chave <small>Uma por linha</small
         ><textarea
           #keywords
           rows="3"
@@ -50,8 +91,25 @@
       </label>
     </details>
 
-    <details class="editor-section">
-      <summary>Pistas — {{ clueCount() }}/3 {{ completeness(clueCount()) }}</summary>
+    <details #section class="editor-section" (toggle)="syncOpen()">
+      <summary>
+        <span class="section-title"
+          >Pistas — {{ clueCount() }}/3 {{ completeness(clueCount()) }}</span
+        >
+        <span
+          class="section-info"
+          role="presentation"
+          (click)="$event.stopPropagation(); $event.preventDefault()"
+        >
+          <app-help-popover icon="i" label="Sobre Pistas">
+            <p>
+              Usadas no jogo “Qual é o conceito?”, nas etapas finais e nas revisões. O aluno vê a
+              primeira pista de graça; cada pista extra conta como ajuda. Escreva da mais difícil
+              para a mais fácil. São necessárias 3.
+            </p>
+          </app-help-popover>
+        </span>
+      </summary>
       <label
         >Pistas na ordem desejada <small>Uma por linha; são necessárias 3 para publicar</small
         ><textarea
@@ -63,8 +121,22 @@
       </label>
     </details>
 
-    <details class="editor-section">
-      <summary>Pré-requisitos — {{ draft.prerequisiteIds.length }}</summary>
+    <details #section class="editor-section" (toggle)="syncOpen()">
+      <summary>
+        <span class="section-title">Pré-requisitos — {{ draft.prerequisiteIds.length }}</span>
+        <span
+          class="section-info"
+          role="presentation"
+          (click)="$event.stopPropagation(); $event.preventDefault()"
+        >
+          <app-help-popover icon="i" label="Sobre Pré-requisitos">
+            <p>
+              Este conceito só aparece para o aluno depois que todos os pré-requisitos estiverem
+              dominados.
+            </p>
+          </app-help-popover>
+        </span>
+      </summary>
       @for (concept of otherConcepts(); track concept.id) {
         <label class="check"
           ><input
@@ -79,10 +151,24 @@
       }
     </details>
 
-    <details class="editor-section">
+    <details #section class="editor-section" (toggle)="syncOpen()">
       <summary>
-        Verdadeiro/Falso — {{ draft.recognitionActivities.length }}/3
-        {{ completeness(draft.recognitionActivities.length) }}
+        <span class="section-title"
+          >Verdadeiro/Falso — {{ draft.recognitionActivities.length }}/3
+          {{ completeness(draft.recognitionActivities.length) }}</span
+        >
+        <span
+          class="section-info"
+          role="presentation"
+          (click)="$event.stopPropagation(); $event.preventDefault()"
+        >
+          <app-help-popover icon="i" label="Sobre Verdadeiro/Falso">
+            <p>
+              Usado na etapa de reconhecimento. A explicação aparece depois da resposta, certa ou
+              errada. São necessárias 3.
+            </p>
+          </app-help-popover>
+        </span>
       </summary>
       @for (activity of draft.recognitionActivities; track $index; let index = $index) {
         <div class="activity">
@@ -112,22 +198,38 @@
           >
           <button
             type="button"
-            class="text-button"
+            class="btn btn-danger"
             (click)="removeItem('recognitionActivities', index)"
           >
             Remover atividade
           </button>
         </div>
       }
-      <button type="button" class="secondary" (click)="addTrueFalse()">
+      <button type="button" class="btn" (click)="addTrueFalse()">
         + Atividade verdadeiro/falso
       </button>
     </details>
 
-    <details class="editor-section">
+    <details #section class="editor-section" (toggle)="syncOpen()">
       <summary>
-        Completar lacunas — {{ draft.fillBlankActivities.length }}/3
-        {{ completeness(draft.fillBlankActivities.length) }}
+        <span class="section-title"
+          >Completar lacunas — {{ draft.fillBlankActivities.length }}/3
+          {{ completeness(draft.fillBlankActivities.length) }}</span
+        >
+        <span
+          class="section-info"
+          role="presentation"
+          (click)="$event.stopPropagation(); $event.preventDefault()"
+        >
+          <app-help-popover icon="i" label="Sobre Completar lacunas">
+            <p>
+              Usado na etapa de recordação guiada. Marque as lacunas no texto como
+              &#123;&#123;1&#125;&#125;, &#123;&#123;2&#125;&#125; (em sequência, a partir de 1) e
+              informe as respostas e as palavras que confundem (distratores; pelo menos 1). São
+              necessárias 3.
+            </p>
+          </app-help-popover>
+        </span>
       </summary>
       <p class="muted">
         Marque os slots no texto como &#123;&#123;1&#125;&#125; e informe respostas como
@@ -164,20 +266,32 @@
           </label>
           <button
             type="button"
-            class="text-button"
+            class="btn btn-danger"
             (click)="removeItem('fillBlankActivities', index)"
           >
             Remover atividade
           </button>
         </div>
       }
-      <button type="button" class="secondary" (click)="addFillBlank()">
-        + Atividade de lacunas
-      </button>
+      <button type="button" class="btn" (click)="addFillBlank()">+ Atividade de lacunas</button>
     </details>
 
-    <details class="editor-section">
-      <summary>Ordenação — opcional</summary>
+    <details #section class="editor-section" (toggle)="syncOpen()">
+      <summary>
+        <span class="section-title">Ordenação — opcional</span>
+        <span
+          class="section-info"
+          role="presentation"
+          (click)="$event.stopPropagation(); $event.preventDefault()"
+        >
+          <app-help-popover icon="i" label="Sobre Ordenação">
+            <p>
+              Aparece junto com Verdadeiro/Falso e Lacunas. Escreva os itens na ordem correta (pelo
+              menos 2); o sistema embaralha para o aluno.
+            </p>
+          </app-help-popover>
+        </span>
+      </summary>
       @for (activity of draft.orderingActivities; track $index; let index = $index) {
         <div class="activity">
           <label
@@ -199,24 +313,34 @@
           </label>
           <button
             type="button"
-            class="text-button"
+            class="btn btn-danger"
             (click)="removeItem('orderingActivities', index)"
           >
             Remover atividade
           </button>
         </div>
       }
-      <button type="button" class="secondary" (click)="addOrdering()">
-        + Atividade de ordenação
-      </button>
+      <button type="button" class="btn" (click)="addOrdering()">+ Atividade de ordenação</button>
     </details>
 
-    <details class="editor-section">
+    <details #section class="editor-section" (toggle)="syncOpen()">
       <summary>
-        <span>Cruzadinha</span
-        ><span>{{
+        <span class="section-title">Cruzadinha</span>
+        <span class="section-status">{{
           draft.crosswordWord.trim() && draft.crosswordClue.trim() ? '✓ preenchida' : 'opcional'
         }}</span>
+        <span
+          class="section-info"
+          role="presentation"
+          (click)="$event.stopPropagation(); $event.preventDefault()"
+        >
+          <app-help-popover icon="i" label="Sobre Cruzadinha">
+            <p>
+              Palavra e definição usadas na cruzadinha do módulo; preencha as duas ou nenhuma. A
+              definição não deve citar a palavra.
+            </p>
+          </app-help-popover>
+        </span>
       </summary>
       <label
         >Conceito (resposta)<small>A palavra que o aluno deve preencher</small
@@ -239,10 +363,10 @@
     </details>
 
     <div class="form-actions">
-      <button type="submit" [disabled]="busy()">
+      <button type="submit" class="btn btn-primary" [disabled]="busy()">
         {{ draft.id ? 'Salvar conceito' : 'Adicionar conceito' }}
       </button>
-      <button type="button" class="secondary" (click)="clear()">Limpar formulário</button>
+      <button type="button" class="btn btn-ghost" (click)="clear()">Limpar formulário</button>
     </div>
   </form>
 </section>
