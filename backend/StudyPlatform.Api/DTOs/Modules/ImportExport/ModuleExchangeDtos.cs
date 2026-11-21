@@ -19,7 +19,11 @@ public sealed class ModuleExchange
     public required int Version { get; init; }
     public bool CrosswordEnabled { get; init; }
     public bool CrosswordAllowAllWords { get; init; }
-    public bool AllowAdvanceReview { get; init; }
+
+    // Removed feature: still accepted so files exported by older versions keep importing, but ignored and never written.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? AllowAdvanceReview { get; init; }
+
     public required List<ConceptExchange> Concepts { get; init; }
 }
 

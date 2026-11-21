@@ -1,11 +1,11 @@
-using StudyPlatform.Api.Domain.Enums;
-using StudyPlatform.Api.Models;
 using FsrsSharp.Configuration;
 using FsrsSharp.Core;
 using FsrsSharp.Models;
+using StudyPlatform.Api.Domain.Enums;
+using StudyPlatform.Api.Models;
+using DomainRating = StudyPlatform.Api.Domain.Enums.FsrsRating;
 using LibraryRating = FsrsSharp.Models.Rating;
 using LibraryState = FsrsSharp.Models.State;
-using DomainRating = StudyPlatform.Api.Domain.Enums.FsrsRating;
 
 namespace StudyPlatform.Api.Services.Learning;
 

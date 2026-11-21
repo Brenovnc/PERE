@@ -1,0 +1,237 @@
+<main class="teacher-page">
+  <app-page-header eyebrow="Organização" title="Turmas e alunos" />
+  @if (error()) {
+    <p role="alert" class="banner-error">{{ error() }}</p>
+  } @else if (notice()) {
+    <p role="status" class="banner-success">{{ notice() }}</p>
+  }
+  @if (busy()) {
+    <p role="status">Salvando…</p>
+  }
+
+  @if (selected(); as classroom) {
+    <button type="button" (click)="close()">← Minhas turmas</button>
+    <a
+      class="button-link"
+      routerLink="/teacher/dashboard"
+      [queryParams]="{ classroom: classroom.id }"
+      >Ver no dashboard</a
+    >
+
+    <section class="panel">
+      <h2>
+        {{ classroom.name }} <small>({{ statusLabels[classroom.status] }})</small>
+      </h2>
+      <form class="form" (submit)="save($event)">
+        <label>Nome<input name="name" required maxlength="160" [value]="classroom.name" /></label>
+        <label
+          >Código<input
+            name="code"
+            required
+            minlength="3"
+            maxlength="32"
+            pattern="[A-Za-z0-9]+(-[A-Za-z0-9]+)*"
+            title="Use letras, números e hífens entre grupos"
+            [value]="classroom.code"
+        /></label>
+        <button type="submit" [disabled]="busy()">Salvar</button>
+        <button type="button" [disabled]="busy() || archived()" (click)="regenerateCode()">
+          Gerar novo código
+        </button>
+        <button type="button" [disabled]="busy() || archived()" (click)="archive()">
+          Arquivar
+        </button>
+      </form>
+      <p class="hint">
+        Os alunos pedem para entrar com o código <strong>{{ classroom.code }}</strong>; você aprova
+        os pedidos abaixo.
+      </p>
+
+      <h3>Módulos associados</h3>
+      <ul>
+        @for (module of classroom.modules; track module.id) {
+          <li>
+            {{ module.title }} ·
+            {{
+              module.status === 'Published'
+                ? 'Publicado'
+                : module.status === 'Archived'
+                  ? 'Arquivado'
+                  : 'Rascunho'
+            }}
+            <button type="button" [disabled]="busy()" (click)="unassign(module.id)">
+              Desassociar
+            </button>
+          </li>
+        } @empty {
+          <li class="muted">Nenhum módulo associado.</li>
+        }
+      </ul>
+      <form class="form" (submit)="assign($event)">
+        <label
+          >Associar módulo publicado
+          <select #moduleSelect (change)="moduleId.set(moduleSelect.value)">
+            <option value="" [selected]="!moduleId()">Selecione…</option>
+            @for (module of assignable(); track module.id) {
+              <option [value]="module.id" [selected]="moduleId() === module.id">
+                {{ module.title }}
+              </option>
+            }
+          </select>
+        </label>
+        <button type="submit" [disabled]="busy() || !moduleId()">Associar</button>
+      </form>
+    </section>
+
+    <section class="panel" aria-labelledby="pending-title">
+      <div class="panel-heading">
+        <h2 id="pending-title">Pedidos pendentes ({{ pending().length }})</h2>
+        @if (pending().length > 0) {
+          <button type="button" [disabled]="busy()" (click)="approveAll()">Aprovar todos</button>
+        }
+      </div>
+      @if (pending().length) {
+        <div class="student-table-wrap">
+          <table class="student-table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Pedido em</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (student of pending(); track student.studentId) {
+                <tr>
+                  <td data-label="Nome">
+                    <strong>{{ student.name }}</strong>
+                  </td>
+                  <td data-label="E-mail">{{ student.email }}</td>
+                  <td data-label="Pedido em">{{ formatLastAccess(student.requestedAtUtc) }}</td>
+                  <td data-label="Ações">
+                    <div class="student-actions">
+                      <button
+                        type="button"
+                        [disabled]="busy()"
+                        [attr.aria-label]="'Aprovar ' + student.name"
+                        (click)="approve(student)"
+                      >
+                        Aprovar
+                      </button>
+                      <button
+                        type="button"
+                        class="secondary"
+                        [disabled]="busy()"
+                        [attr.aria-label]="'Recusar ' + student.name"
+                        (click)="reject(student)"
+                      >
+                        Recusar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <app-empty-state>Nenhum pedido aguardando aprovação.</app-empty-state>
+      }
+    </section>
+
+    <section class="panel" aria-labelledby="students-title">
+      <h2 id="students-title">Alunos ({{ approved().length }})</h2>
+      @if (approved().length) {
+        <div class="student-table-wrap">
+          <table class="student-table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Último acesso</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (student of approved(); track student.studentId) {
+                <tr>
+                  <td data-label="Nome">
+                    <strong>{{ student.name }}</strong>
+                  </td>
+                  <td data-label="E-mail">{{ student.email }}</td>
+                  <td data-label="Último acesso">
+                    {{ formatLastAccess(student.lastAccessAtUtc) }}
+                  </td>
+                  <td data-label="Ações">
+                    <div class="student-actions">
+                      <button
+                        type="button"
+                        [disabled]="busy()"
+                        [attr.aria-label]="'Remover ' + student.name"
+                        (click)="remove(student)"
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <app-empty-state>Nenhum aluno aprovado ainda.</app-empty-state>
+      }
+    </section>
+  } @else {
+    <div class="columns">
+      <form class="panel" (submit)="create($event)">
+        <h2>Nova turma</h2>
+        <label>Nome<input name="name" required maxlength="160" /></label>
+        <label
+          >Código<input
+            name="code"
+            required
+            minlength="3"
+            maxlength="32"
+            pattern="[A-Za-z0-9]+(-[A-Za-z0-9]+)*"
+            title="Use letras, números e hífens entre grupos"
+        /></label>
+        <button type="submit" [disabled]="busy()">Criar turma</button>
+      </form>
+      <section class="panel">
+        <h2>Minhas turmas</h2>
+        @if (loading()) {
+          <p class="muted" role="status">Carregando turmas...</p>
+        } @else if (classrooms().length) {
+          <ul class="classroom-list">
+            @for (item of classrooms(); track item.id) {
+              <li class="classroom-row" [attr.data-archived]="item.status === 'Archived'">
+                <button type="button" class="classroom-link" (click)="open(item.id)">
+                  <span>
+                    <strong>{{ item.name }}</strong>
+                    <small
+                      >{{ item.code }} · {{ plural(item.studentCount, 'aluno', 'alunos') }} ·
+                      {{ plural(item.moduleCount, 'módulo', 'módulos') }}</small
+                    >
+                  </span>
+                  <span class="row-end">
+                    @if (item.pendingCount > 0) {
+                      <span class="pending-badge">{{
+                        plural(item.pendingCount, 'pedido', 'pedidos')
+                      }}</span>
+                    }
+                    <span class="status">{{ statusLabels[item.status] }}</span>
+                  </span>
+                </button>
+              </li>
+            }
+          </ul>
+        } @else {
+          <app-empty-state>Nenhuma turma cadastrada.</app-empty-state>
+        }
+      </section>
+    </div>
+  }
+</main>

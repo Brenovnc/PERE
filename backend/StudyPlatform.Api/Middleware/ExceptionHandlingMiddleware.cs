@@ -1,4 +1,4 @@
-﻿using StudyPlatform.Api.DTOs.Common;
+using StudyPlatform.Api.DTOs.Common;
 using StudyPlatform.Api.Exceptions;
 
 namespace StudyPlatform.Api.Middleware;

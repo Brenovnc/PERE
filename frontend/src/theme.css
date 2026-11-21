@@ -1,12 +1,12 @@
-/* Neutral Studio palette. The page starts in dark mode; both themes are explicit. */
+/* Neutral Studio palette. The page starts dark; both themes are explicit. */
 :root,
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --ivory: #F7F5F1;
-  --beige: #E7DCC6;
-  --taupe: #C8B8A5;
-  --greige: #A89F91;
-  --brown: #7A5E49;
+  --ivory: #f7f5f1;
+  --beige: #e7dcc6;
+  --taupe: #c8b8a5;
+  --greige: #a89f91;
+  --brown: #7a5e49;
   --charcoal: #333333;
   --black: #111111;
 
@@ -38,15 +38,20 @@
   --badge-bg: var(--charcoal);
   --badge-text: var(--ivory);
 
+  /* Selected item of the teacher navigation. */
+  --nav-active-bg: var(--charcoal);
+  --nav-active-text: var(--ivory);
+  --nav-active-border: color-mix(in srgb, var(--taupe) 58%, transparent);
+
   --success-bg: #163327;
   --success-border: #396953;
-  --success-text: #C5F5D6;
-  --danger-bg: #371D25;
-  --danger-border: #89525A;
-  --danger-text: #FFD0D5;
-  --warning-bg: #332A19;
-  --warning-border: #79633B;
-  --warning-text: #FFE1B2;
+  --success-text: #c5f5d6;
+  --danger-bg: #371d25;
+  --danger-border: #89525a;
+  --danger-text: #ffd0d5;
+  --warning-bg: #332a19;
+  --warning-border: #79633b;
+  --warning-text: #ffe1b2;
 
   /* Crossword cells stay light in both themes for comfortable reading. */
   --game-cell-bg: var(--ivory);
@@ -54,15 +59,15 @@
   --game-cell-border: var(--taupe);
   --game-focus-ring: var(--brown);
   --game-cell-active-bg: var(--beige);
-  --game-cell-focus-bg: #FFE078;
-  --game-cell-correct-bg: #9FC5A8;
-  --game-cell-correct-border: #6F9E75;
+  --game-cell-focus-bg: #ffe078;
+  --game-cell-correct-bg: #9fc5a8;
+  --game-cell-correct-border: #6f9e75;
   --game-cell-correct-text: #152017;
-  --game-cell-error-bg: #EF8D97;
-  --game-cell-error-border: #B3261E;
+  --game-cell-error-bg: #ef8d97;
+  --game-cell-error-border: #b3261e;
   --game-cell-error-text: var(--black);
-  --game-cell-revealed-bg: #FFE29A;
-  --game-cell-revealed-border: #A87508;
+  --game-cell-revealed-bg: #ffe29a;
+  --game-cell-revealed-border: #a87508;
   --game-cell-revealed-text: #362400;
 
   --chart-1: var(--beige);
@@ -73,33 +78,8 @@
   --tooltip-border: var(--border);
   --header-bg: var(--bg);
 
-  /* Aliases retained while CSS Modules move to the semantic tokens above. */
-  --theme-surface-canvas: var(--bg);
-  --theme-surface-main: var(--surface);
-  --theme-surface-raised: var(--surface-2);
-  --theme-surface-bright: var(--game-cell-bg);
-  --theme-surface-selected: var(--accent-soft);
-  --theme-text-primary: var(--text);
-  --theme-text-heading: var(--text-heading);
-  --theme-text-secondary: var(--text-muted);
-  --theme-text-accent: var(--accent);
-  --theme-border: var(--border);
-  --theme-border-strong: var(--border-strong);
-  --theme-focus: var(--focus-ring);
-  --theme-shadow: var(--shadow);
-  --theme-surface-green: var(--success-bg);
-  --theme-border-green: var(--success-border);
-  --theme-text-green: var(--success-text);
-  --theme-surface-red: var(--danger-bg);
-  --theme-border-red: var(--danger-border);
-  --theme-text-red: var(--danger-text);
-  --theme-button-bg: var(--btn-cta-bg);
-  --theme-button-text: var(--btn-cta-text);
-  --chart-primary: var(--chart-1);
-  --chart-positive: var(--chart-2);
-  --chart-neutral: var(--chart-3);
-  --page-bg: var(--bg);
-  --page-text: var(--text);
+  --logo-bg: var(--beige);
+  --logo-mark: var(--black);
 }
 
 :root[data-theme='light'] {
@@ -132,15 +112,19 @@
   --badge-bg: var(--beige);
   --badge-text: var(--charcoal);
 
-  --success-bg: #E7F1E9;
-  --success-border: #9BAF9F;
-  --success-text: #24583C;
-  --danger-bg: #F5E8E9;
-  --danger-border: #D5A9AE;
-  --danger-text: #8C3340;
-  --warning-bg: #FBF2D9;
-  --warning-border: #B3914F;
-  --warning-text: #654A22;
+  --nav-active-bg: var(--beige);
+  --nav-active-text: var(--black);
+  --nav-active-border: var(--taupe);
+
+  --success-bg: #e7f1e9;
+  --success-border: #9baf9f;
+  --success-text: #24583c;
+  --danger-bg: #f5e8e9;
+  --danger-border: #d5a9ae;
+  --danger-text: #8c3340;
+  --warning-bg: #fbf2d9;
+  --warning-border: #b3914f;
+  --warning-text: #654a22;
 
   --game-cell-border: var(--brown);
   --game-cell-active-bg: var(--beige);
@@ -152,33 +136,6 @@
   --tooltip-border: var(--taupe);
   --header-bg: var(--bg);
 
-  --theme-surface-canvas: var(--bg);
-  --theme-surface-main: var(--surface);
-  --theme-surface-raised: var(--surface-2);
-  --theme-surface-bright: var(--game-cell-bg);
-  --theme-surface-selected: var(--accent-soft);
-  --theme-text-primary: var(--text);
-  --theme-text-heading: var(--text-heading);
-  --theme-text-secondary: var(--text-muted);
-  --theme-text-accent: var(--accent);
-  --theme-border: var(--border);
-  --theme-border-strong: var(--border-strong);
-  --theme-focus: var(--focus-ring);
-  --theme-shadow: var(--shadow);
-  --theme-surface-green: var(--success-bg);
-  --theme-border-green: var(--success-border);
-  --theme-text-green: var(--success-text);
-  --theme-surface-red: var(--danger-bg);
-  --theme-border-red: var(--danger-border);
-  --theme-text-red: var(--danger-text);
-  --theme-button-bg: var(--btn-cta-bg);
-  --theme-button-text: var(--btn-cta-text);
-  --chart-primary: var(--chart-1);
-  --chart-positive: var(--chart-2);
-  --chart-neutral: var(--chart-3);
-  --page-bg: var(--bg);
-  --page-text: var(--text);
+  --logo-bg: var(--brown);
+  --logo-mark: var(--ivory);
 }
-
-:root { --logo-bg: var(--beige); --logo-mark: var(--black); }
-:root[data-theme='light'] { --logo-bg: var(--brown); --logo-mark: var(--ivory); }

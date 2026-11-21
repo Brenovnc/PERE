@@ -14,5 +14,4 @@ public sealed class Teacher
 
     public ICollection<Module> Modules { get; set; } = new List<Module>();
     public ICollection<Classroom> Classrooms { get; set; } = new List<Classroom>();
-    public TeacherPhoto? Photo { get; set; }
 }

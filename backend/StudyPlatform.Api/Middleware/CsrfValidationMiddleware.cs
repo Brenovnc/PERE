@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Antiforgery;
 using StudyPlatform.Api.DTOs.Common;
 
 namespace StudyPlatform.Api.Middleware;

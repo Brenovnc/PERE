@@ -1,8 +1,11 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using StudyPlatform.Api.DTOs.Auth;
+using StudyPlatform.Api.DTOs.Classrooms;
 using StudyPlatform.Api.DTOs.Learning;
+using StudyPlatform.Api.Services.Classrooms;
 using StudyPlatform.Api.Services.Learning;
 
 namespace StudyPlatform.Api.Controllers;
@@ -10,9 +13,22 @@ namespace StudyPlatform.Api.Controllers;
 [ApiController]
 [Authorize(Policy = AuthPolicies.Student)]
 [Route("api/student")]
-public sealed class StudySessionsController(StudySessionService sessions, StudentStudyCatalogService catalog,
-    StudentCrosswordService crosswords, AdvanceReviewService advanceReviews) : ControllerBase
+public sealed class StudySessionsController(
+    StudySessionService sessions,
+    StudentStudyCatalogService catalog,
+    StudentCrosswordService crosswords,
+    EnrollmentService enrollments) : ControllerBase
 {
+    [HttpGet("classrooms")]
+    public async Task<ActionResult<IReadOnlyList<StudentClassroomResponse>>> ListClassrooms(CancellationToken ct) =>
+        Ok(await enrollments.ListForStudentAsync(StudentId, ct));
+
+    /// <summary>Requests to join a classroom by its code; the enrollment stays PENDING until the teacher decides.</summary>
+    [HttpPost("classrooms/join")]
+    [EnableRateLimiting(RateLimitPolicies.Sensitive)]
+    public async Task<ActionResult<StudentClassroomResponse>> JoinClassroom(JoinClassroomRequest request, CancellationToken ct) =>
+        Ok(await enrollments.JoinAsync(StudentId, request.Code, ct));
+
     [HttpGet("modules")]
     public async Task<ActionResult<IReadOnlyList<StudentModuleResponse>>> ListModules(CancellationToken ct) =>
         Ok(await catalog.ListModulesAsync(StudentId, ct));
@@ -21,22 +37,9 @@ public sealed class StudySessionsController(StudySessionService sessions, Studen
     public async Task<ActionResult<StudentModuleResponse>> GetModule(Guid moduleId, CancellationToken ct) =>
         Ok(await catalog.GetModuleAsync(StudentId, moduleId, ct));
 
-    [HttpGet("modules/{moduleId:guid}/teacher-photo")]
-    public async Task<IActionResult> GetTeacherPhoto(Guid moduleId, CancellationToken ct)
-    {
-        var photo = await catalog.GetTeacherPhotoAsync(StudentId, moduleId, ct);
-        if (photo is null) return NotFound();
-        Response.Headers.CacheControl = "private, max-age=86400";
-        return File(photo.Data, photo.ContentType);
-    }
-
     [HttpGet("modules/{moduleId:guid}/crossword")]
     public async Task<ActionResult<IReadOnlyList<StudentCrosswordEntryResponse>>> GetCrossword(Guid moduleId, [FromQuery] bool allWords = false, CancellationToken ct = default) =>
         Ok(await crosswords.GetAsync(StudentId, moduleId, allWords, ct));
-
-    [HttpPost("modules/{moduleId:guid}/advance-review")]
-    public async Task<ActionResult<StudentModuleResponse>> AdvanceReview(Guid moduleId, CancellationToken ct) =>
-        Ok(await advanceReviews.AdvanceAsync(StudentId, moduleId, ct));
 
     [HttpPost("modules/{moduleId:guid}/sessions")]
     public async Task<ActionResult<StartStudySessionResponse>> Start(Guid moduleId, CancellationToken ct) =>

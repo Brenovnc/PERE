@@ -1,10 +1,10 @@
-﻿using System.Net;
+using System.Net;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using StudyPlatform.Api.Data;
+using StudyPlatform.Api.Domain.Enums;
 using StudyPlatform.Api.DTOs.Concepts;
 using StudyPlatform.Api.DTOs.Modules;
-using StudyPlatform.Api.Domain.Enums;
 using StudyPlatform.Api.Exceptions;
 using StudyPlatform.Api.Models;
 using StudyPlatform.Api.Models.Activities;
@@ -15,6 +15,7 @@ namespace StudyPlatform.Api.Services.Modules;
 public sealed partial class ModuleService(
     ApplicationDbContext db,
     PrerequisiteService prerequisiteService,
+    ModuleContentCache contentCache,
     TimeProvider timeProvider)
 {
     private DateTime _now => timeProvider.GetUtcNow().UtcDateTime;
@@ -27,7 +28,7 @@ public sealed partial class ModuleService(
             .Select(module => new ModuleSummaryResponse(module.Id, module.Title, module.Description,
                 module.Subject, module.Version, module.Status, module.CreatedAtUtc, module.UpdatedAtUtc,
                 module.Concepts.Count(concept => concept.IsActive), module.CrosswordEnabled,
-                module.CrosswordAllowAllWords, module.AllowAdvanceReview, module.CommunityOriginAuthor))
+                module.CrosswordAllowAllWords, module.CommunityOriginAuthor))
             .ToListAsync(ct);
     }
 
@@ -50,7 +51,6 @@ public sealed partial class ModuleService(
             Version = request.Version,
             CrosswordEnabled = request.CrosswordEnabled == true,
             CrosswordAllowAllWords = request.CrosswordEnabled == true && request.CrosswordAllowAllWords == true,
-            AllowAdvanceReview = request.AllowAdvanceReview == true,
             Status = ModuleStatus.Draft,
             CreatedAtUtc = now,
             UpdatedAtUtc = now,
@@ -71,9 +71,9 @@ public sealed partial class ModuleService(
         if (request.CrosswordEnabled.HasValue) module.CrosswordEnabled = request.CrosswordEnabled.Value;
         if (!module.CrosswordEnabled) module.CrosswordAllowAllWords = false;
         else if (request.CrosswordAllowAllWords.HasValue) module.CrosswordAllowAllWords = request.CrosswordAllowAllWords.Value;
-        if (request.AllowAdvanceReview.HasValue) module.AllowAdvanceReview = request.AllowAdvanceReview.Value;
         module.UpdatedAtUtc = _now;
         await db.SaveChangesAsync(ct);
+        contentCache.Invalidate(moduleId);
         return MapModule(module);
     }
 
@@ -91,7 +91,6 @@ public sealed partial class ModuleService(
             Version = source.Version,
             CrosswordEnabled = source.CrosswordEnabled,
             CrosswordAllowAllWords = source.CrosswordEnabled && source.CrosswordAllowAllWords,
-            AllowAdvanceReview = source.AllowAdvanceReview,
             Status = ModuleStatus.Draft,
             CommunityOriginModuleId = source.IsCommunityListing ? source.Id : source.CommunityOriginModuleId,
             CommunityOriginAuthor = source.IsCommunityListing ? source.Teacher.Name : source.CommunityOriginAuthor,
@@ -126,6 +125,32 @@ public sealed partial class ModuleService(
         return MapModule(copy);
     }
 
+    /// <summary>Shares a published module with the community as an independent published copy.</summary>
+    public async Task<CommunityMineResponse> ShareToCommunityAsync(Guid teacherId, Guid moduleId, CancellationToken ct)
+    {
+        var source = await db.Modules.SingleOrDefaultAsync(
+                x => x.Id == moduleId && x.TeacherId == teacherId && !x.IsCommunityListing, ct)
+            ?? throw NotFound("module_not_found", "O módulo não foi encontrado.");
+        if (source.Status != ModuleStatus.Published)
+            throw BadRequest("module_not_published", "Somente módulos publicados podem ser enviados à comunidade.");
+        if (await db.Modules.AnyAsync(x => x.TeacherId == teacherId && x.IsCommunityListing && x.CommunitySourceModuleId == source.Id, ct))
+            throw new ApiException(409, "community_already_shared", "Este módulo já foi enviado. Edite ou exclua o envio existente.");
+
+        // The listing is a separate copy, so later edits to the source do not leak into the community.
+        var copy = await DuplicateAsync(teacherId, source.Id, ct);
+        var listing = await db.Modules.SingleAsync(x => x.Id == copy.Id, ct);
+        listing.Title = source.Title;
+        listing.Status = ModuleStatus.Published;
+        listing.IsCommunityListing = true;
+        listing.CommunitySourceModuleId = source.Id;
+        listing.SharedAtUtc = _now;
+        await db.SaveChangesAsync(ct);
+
+        var activeConcepts = await db.Concepts.CountAsync(c => c.ModuleId == listing.Id && c.IsActive, ct);
+        return new CommunityMineResponse(listing.Id, listing.Title, listing.Description, listing.Subject,
+            activeConcepts, listing.SharedAtUtc, 0, listing.CrosswordEnabled, listing.CommunitySourceModuleId);
+    }
+
     public async Task<ModuleDetailsResponse> DownloadCommunityAsync(Guid teacherId, Guid listingId, CancellationToken ct)
     {
         var source = await db.Modules.Where(x => x.Id == listingId && x.IsCommunityListing).Include(x => x.Teacher)
@@ -136,15 +161,46 @@ public sealed partial class ModuleService(
             .Include(x => x.Concepts).ThenInclude(x => x.OrderingActivities).ThenInclude(x => x.Items)
             .SingleOrDefaultAsync(ct) ?? throw NotFound("community_module_not_found", "O módulo não foi encontrado.");
         var now = _now;
-        var copy = new Module { TeacherId = teacherId, Title = AddCopySuffix(source.Title), Description = source.Description, Subject = source.Subject, Version = source.Version, Status = ModuleStatus.Draft, CrosswordEnabled = source.CrosswordEnabled, CrosswordAllowAllWords = source.CrosswordAllowAllWords, AllowAdvanceReview = source.AllowAdvanceReview, CommunityOriginModuleId = source.Id, CommunityOriginAuthor = source.Teacher.Name, CreatedAtUtc = now, UpdatedAtUtc = now };
+        var copy = new Module
+        {
+            TeacherId = teacherId,
+            Title = AddCopySuffix(source.Title),
+            Description = source.Description,
+            Subject = source.Subject,
+            Version = source.Version,
+            Status = ModuleStatus.Draft,
+            CrosswordEnabled = source.CrosswordEnabled,
+            CrosswordAllowAllWords = source.CrosswordAllowAllWords,
+            CommunityOriginModuleId = source.Id,
+            CommunityOriginAuthor = source.Teacher.Name,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now,
+        };
         var map = source.Concepts.ToDictionary(x => x.Id, _ => Guid.NewGuid());
-        foreach (var concept in source.Concepts) copy.Concepts.Add(CloneConcept(concept, map[concept.Id], copy.Id, now));
-        foreach (var concept in source.Concepts) foreach (var edge in concept.Prerequisites) if (map.TryGetValue(edge.PrerequisiteConceptId, out var prereq)) copy.Concepts.Single(x => x.Id == map[concept.Id]).Prerequisites.Add(new ConceptPrerequisite { ConceptId = map[concept.Id], PrerequisiteConceptId = prereq, ModuleId = copy.Id });
+        foreach (var concept in source.Concepts)
+            copy.Concepts.Add(CloneConcept(concept, map[concept.Id], copy.Id, now));
+        foreach (var concept in source.Concepts)
+        {
+            var conceptCopy = copy.Concepts.Single(x => x.Id == map[concept.Id]);
+            foreach (var edge in concept.Prerequisites)
+            {
+                if (!map.TryGetValue(edge.PrerequisiteConceptId, out var prerequisiteId)) continue;
+                conceptCopy.Prerequisites.Add(new ConceptPrerequisite
+                {
+                    ConceptId = conceptCopy.Id,
+                    PrerequisiteConceptId = prerequisiteId,
+                    ModuleId = copy.Id,
+                });
+            }
+        }
+
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         db.Modules.Add(copy);
         await db.SaveChangesAsync(ct);
-        await db.Modules.Where(x => x.Id == listingId).ExecuteUpdateAsync(update => update.SetProperty(x => x.CommunityDownloadCount, x => x.CommunityDownloadCount + 1), ct);
-        await tx.CommitAsync(ct); return MapModule(copy);
+        await db.Modules.Where(x => x.Id == listingId).ExecuteUpdateAsync(update =>
+            update.SetProperty(x => x.CommunityDownloadCount, x => x.CommunityDownloadCount + 1), ct);
+        await tx.CommitAsync(ct);
+        return MapModule(copy);
     }
 
     public async Task ArchiveAsync(Guid teacherId, Guid moduleId, CancellationToken ct)
@@ -155,6 +211,7 @@ public sealed partial class ModuleService(
         module.Status = ModuleStatus.Archived;
         module.UpdatedAtUtc = _now;
         await db.SaveChangesAsync(ct);
+        contentCache.Invalidate(moduleId);
     }
 
     private async Task<Module> LoadModuleAsync(Guid teacherId, Guid moduleId, CancellationToken ct)
@@ -182,19 +239,36 @@ public sealed partial class ModuleService(
         module.Id, module.Title, module.Description, module.Subject, module.Version, module.Status,
         module.CreatedAtUtc, module.UpdatedAtUtc,
         module.Concepts.OrderBy(item => item.Name).Select(ConceptResponseMapper.Map).ToArray(),
-        module.CrosswordEnabled, module.CrosswordAllowAllWords, module.AllowAdvanceReview, module.CommunityOriginAuthor, module.IsCommunityListing);
+        module.CrosswordEnabled, module.CrosswordAllowAllWords, module.CommunityOriginAuthor, module.IsCommunityListing);
 
     internal static Concept CloneConcept(Concept source, Guid newId, Guid moduleId, DateTime now)
     {
-        var copy = new Concept { Id = newId, ModuleId = moduleId, ExternalId = source.ExternalId,
-            Name = source.Name, Definition = source.Definition, CrosswordWord = source.CrosswordWord,
-            CrosswordClue = source.CrosswordClue, IsActive = source.IsActive,
-            CreatedAtUtc = now, UpdatedAtUtc = now };
+        var copy = new Concept
+        {
+            Id = newId,
+            ModuleId = moduleId,
+            ExternalId = source.ExternalId,
+            Name = source.Name,
+            Definition = source.Definition,
+            CrosswordWord = source.CrosswordWord,
+            CrosswordClue = source.CrosswordClue,
+            IsActive = source.IsActive,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now
+        };
         foreach (var item in source.Keywords) copy.Keywords.Add(new ConceptKeyword { ConceptId = newId, Value = item.Value, IsActive = item.IsActive });
         foreach (var item in source.Clues) copy.Clues.Add(new ConceptClue { ConceptId = newId, Position = item.Position, Text = item.Text, IsActive = item.IsActive });
         foreach (var item in source.RecognitionActivities)
-            copy.RecognitionActivities.Add(new RecognitionActivity { ConceptId = newId, Statement = item.Statement,
-                IsCorrect = item.IsCorrect, Explanation = item.Explanation, IsActive = item.IsActive, CreatedAtUtc = now, UpdatedAtUtc = now });
+            copy.RecognitionActivities.Add(new RecognitionActivity
+            {
+                ConceptId = newId,
+                Statement = item.Statement,
+                IsCorrect = item.IsCorrect,
+                Explanation = item.Explanation,
+                IsActive = item.IsActive,
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            });
         foreach (var item in source.FillBlankActivities)
         {
             var activity = new FillBlankActivity { ConceptId = newId, Text = item.Text, IsActive = item.IsActive, CreatedAtUtc = now, UpdatedAtUtc = now };

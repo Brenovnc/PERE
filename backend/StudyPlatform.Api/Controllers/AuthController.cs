@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Antiforgery;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using StudyPlatform.Api.DTOs.Auth;
 using StudyPlatform.Api.Services.Auth;
 
@@ -26,44 +28,40 @@ public sealed class AuthController(
 
     [HttpPost("teachers/register")]
     [AllowAnonymous]
-    public async Task<ActionResult<AuthenticatedUserResponse>> RegisterTeacher(
-        TeacherRegisterRequest request,
-        CancellationToken cancellationToken)
+    [EnableRateLimiting(RateLimitPolicies.Sensitive)]
+    public async Task<ActionResult<AuthenticatedUserResponse>> RegisterTeacher(TeacherRegisterRequest request, CancellationToken ct)
     {
-        var teacher = await authService.RegisterTeacherAsync(request, cancellationToken);
+        var teacher = await authService.RegisterTeacherAsync(request, ct);
         await SignInAsync(AuthPrincipalFactory.ForTeacher(teacher));
         return StatusCode(StatusCodes.Status201Created, AuthenticatedUserResponse.FromTeacher(teacher));
     }
 
     [HttpPost("teachers/login")]
     [AllowAnonymous]
-    public async Task<ActionResult<AuthenticatedUserResponse>> LoginTeacher(
-        TeacherLoginRequest request,
-        CancellationToken cancellationToken)
+    [EnableRateLimiting(RateLimitPolicies.Sensitive)]
+    public async Task<ActionResult<AuthenticatedUserResponse>> LoginTeacher(TeacherLoginRequest request, CancellationToken ct)
     {
-        var teacher = await authService.AuthenticateTeacherAsync(request, cancellationToken);
+        var teacher = await authService.AuthenticateTeacherAsync(request, ct);
         await SignInAsync(AuthPrincipalFactory.ForTeacher(teacher));
         return Ok(AuthenticatedUserResponse.FromTeacher(teacher));
     }
 
-    [HttpPost("students/activate")]
+    [HttpPost("students/register")]
     [AllowAnonymous]
-    public async Task<ActionResult<AuthenticatedUserResponse>> ActivateStudent(
-        StudentActivationRequest request,
-        CancellationToken cancellationToken)
+    [EnableRateLimiting(RateLimitPolicies.Sensitive)]
+    public async Task<ActionResult<AuthenticatedUserResponse>> RegisterStudent(StudentRegisterRequest request, CancellationToken ct)
     {
-        var student = await authService.ActivateStudentAsync(request, cancellationToken);
+        var student = await authService.RegisterStudentAsync(request, ct);
         await SignInAsync(AuthPrincipalFactory.ForStudent(student));
-        return Ok(AuthenticatedUserResponse.FromStudent(student));
+        return StatusCode(StatusCodes.Status201Created, AuthenticatedUserResponse.FromStudent(student));
     }
 
     [HttpPost("students/login")]
     [AllowAnonymous]
-    public async Task<ActionResult<AuthenticatedUserResponse>> LoginStudent(
-        StudentLoginRequest request,
-        CancellationToken cancellationToken)
+    [EnableRateLimiting(RateLimitPolicies.Sensitive)]
+    public async Task<ActionResult<AuthenticatedUserResponse>> LoginStudent(StudentLoginRequest request, CancellationToken ct)
     {
-        var student = await authService.AuthenticateStudentAsync(request, cancellationToken);
+        var student = await authService.AuthenticateStudentAsync(request, ct);
         await SignInAsync(AuthPrincipalFactory.ForStudent(student));
         return Ok(AuthenticatedUserResponse.FromStudent(student));
     }
@@ -81,7 +79,7 @@ public sealed class AuthController(
     public ActionResult<AuthenticatedUserResponse> Me() =>
         Ok(AuthenticatedUserResponse.FromPrincipal(User));
 
-    private Task SignInAsync(System.Security.Claims.ClaimsPrincipal principal) =>
+    private Task SignInAsync(ClaimsPrincipal principal) =>
         HttpContext.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,
             principal,

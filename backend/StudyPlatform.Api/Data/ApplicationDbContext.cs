@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using StudyPlatform.Api.Models;
 using StudyPlatform.Api.Models.Activities;
 
@@ -10,9 +10,9 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 {
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
     public DbSet<Teacher> Teachers => Set<Teacher>();
-    public DbSet<TeacherPhoto> TeacherPhotos => Set<TeacherPhoto>();
     public DbSet<Student> Students => Set<Student>();
     public DbSet<Classroom> Classrooms => Set<Classroom>();
+    public DbSet<Enrollment> Enrollments => Set<Enrollment>();
     public DbSet<Module> Modules => Set<Module>();
     public DbSet<ClassroomModule> ClassroomModules => Set<ClassroomModule>();
     public DbSet<Concept> Concepts => Set<Concept>();

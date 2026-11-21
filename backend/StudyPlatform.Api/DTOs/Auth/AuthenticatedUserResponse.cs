@@ -1,38 +1,22 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using StudyPlatform.Api.Models;
 
 namespace StudyPlatform.Api.DTOs.Auth;
 
-public sealed record AuthenticatedUserResponse(
-    Guid Id,
-    string Role,
-    string? Name,
-    string? Email,
-    Guid? ClassroomId,
-    string? EnrollmentNumber)
+public sealed record AuthenticatedUserResponse(Guid Id, string Role, string Name, string Email)
 {
     public static AuthenticatedUserResponse FromTeacher(Teacher teacher) =>
-        new(teacher.Id, AuthRoles.Teacher, teacher.Name, teacher.Email, null, null);
+        new(teacher.Id, AuthRoles.Teacher, teacher.Name, teacher.Email);
 
     public static AuthenticatedUserResponse FromStudent(Student student) =>
-        new(student.Id, AuthRoles.Student, student.Name, null,
-            student.ClassroomId, student.EnrollmentNumber);
+        new(student.Id, AuthRoles.Student, student.Name, student.Email);
 
-    public static AuthenticatedUserResponse FromPrincipal(ClaimsPrincipal principal)
-    {
-        var id = Guid.Parse(principal.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var role = principal.FindFirstValue(ClaimTypes.Role)!;
-        var name = principal.FindFirstValue(ClaimTypes.Name);
-
-        return role switch
-        {
-            AuthRoles.Teacher => new(id, role, name, principal.FindFirstValue(ClaimTypes.Email), null, null),
-            AuthRoles.Student => new(id, role, name, null,
-                Guid.Parse(principal.FindFirstValue(AuthClaimTypes.ClassroomId)!),
-                principal.FindFirstValue(AuthClaimTypes.EnrollmentNumber)),
-            _ => throw new InvalidOperationException("Unknown authenticated user role."),
-        };
-    }
+    // Built only from the cookie claims: no database query per request.
+    public static AuthenticatedUserResponse FromPrincipal(ClaimsPrincipal principal) => new(
+        Guid.Parse(principal.FindFirstValue(ClaimTypes.NameIdentifier)!),
+        principal.FindFirstValue(ClaimTypes.Role)!,
+        principal.FindFirstValue(ClaimTypes.Name) ?? string.Empty,
+        principal.FindFirstValue(ClaimTypes.Email) ?? string.Empty);
 }
 
 public static class AuthRoles
@@ -48,8 +32,8 @@ public static class AuthPolicies
     public const string Student = "Student";
 }
 
-public static class AuthClaimTypes
+public static class RateLimitPolicies
 {
-    public const string ClassroomId = "classroom_id";
-    public const string EnrollmentNumber = "enrollment_number";
+    /// <summary>Login, registration and joining a classroom.</summary>
+    public const string Sensitive = "Sensitive";
 }

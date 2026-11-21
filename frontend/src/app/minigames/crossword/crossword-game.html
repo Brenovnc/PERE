@@ -1,0 +1,240 @@
+<section class="game" aria-label="Cruzadinha">
+  <header class="header">
+    <div><ng-content /></div>
+    <div class="tools">
+      <div #revealMenu class="reveal-wrap">
+        <button
+          type="button"
+          aria-haspopup="menu"
+          [attr.aria-expanded]="revealOpen()"
+          [disabled]="allSolved()"
+          (click)="revealOpen.set(!revealOpen())"
+        >
+          Revelar ▾
+        </button>
+        @if (revealOpen()) {
+          <div class="reveal-menu" role="menu">
+            <button type="button" role="menuitem" (click)="chooseReveal('cell')">
+              Revelar célula
+            </button>
+            <button type="button" role="menuitem" (click)="chooseReveal('word')">
+              Revelar palavra
+            </button>
+            <button type="button" role="menuitem" (click)="chooseReveal('all')">
+              Revelar cruzadinha
+            </button>
+          </div>
+        }
+      </div>
+      <button
+        #helpButton
+        type="button"
+        class="help-button"
+        aria-label="Como funciona a cruzadinha"
+        (click)="helpOpen.set(true)"
+      >
+        ?
+      </button>
+    </div>
+  </header>
+
+  @if (grid().words.length < 2) {
+    <div class="empty">
+      <p>Ainda não há palavras suficientes para montar a cruzadinha.</p>
+      <button type="button" (click)="back.emit()">Voltar ao módulo</button>
+    </div>
+  } @else {
+    <p>
+      Foque uma célula para selecionar a palavra. Em cruzamentos, clique novamente para alternar a
+      direção. Pressione Enter para conferir.
+    </p>
+    @let displayed = displayedWord();
+    <div class="active-bar">
+      <button type="button" aria-label="Palavra anterior" (click)="navigateWord(-1)">‹</button>
+      <span class="active-number">{{ displayed?.number ?? 1 }}</span>
+      <span
+        >{{ displayed?.direction === 'down' ? '↓' : '→'
+        }}<span class="sr-only">{{
+          displayed?.direction === 'down' ? 'vertical' : 'horizontal'
+        }}</span></span
+      >
+      <p>{{ displayed?.clue ?? 'Selecione uma palavra' }}</p>
+      <button type="button" aria-label="Próxima palavra" (click)="navigateWord(1)">›</button>
+    </div>
+    <p class="sr-only" aria-live="polite">{{ message() }}</p>
+
+    <div class="puzzle-layout">
+      <div class="board-scroll" role="group" aria-label="Grade da cruzadinha">
+        <div class="board" [style.--columns]="grid().cols">
+          @for (row of grid().cells; track rowIndex; let rowIndex = $index) {
+            @for (cell of row; track colIndex; let colIndex = $index) {
+              @if (cell) {
+                @let id = key(cell);
+                @let locked = isLocked(cell);
+                <!-- Mouse shortcut only: keyboard users reach the input inside, which handles focus and keys. -->
+                <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+                <span
+                  class="cell"
+                  [class.incorrect-cell]="isWrong(cell, locked)"
+                  [attr.data-active]="isInActiveWord(cell)"
+                  [attr.data-focused]="focusedKey() === id || null"
+                  [attr.data-revealed]="revealedKeys().has(id) || null"
+                  (pointerdown)="onCellPointerDown(cell)"
+                  (click)="onCellClick(cell)"
+                >
+                  <span class="number-group">
+                    @for (start of cell.starts; track start.id; let first = $first) {
+                      <span class="number-wrap">
+                        @if (!first) {
+                          <span aria-hidden="true">,</span>
+                        }
+                        <button
+                          type="button"
+                          class="number"
+                          [attr.data-active]="activeWordId() === start.id || null"
+                          [attr.data-multiple]="cell.starts.length > 1 || null"
+                          [attr.aria-label]="
+                            'Palavra ' +
+                            start.number +
+                            ', ' +
+                            (start.direction === 'across' ? 'horizontal' : 'vertical') +
+                            ': ' +
+                            clueFor(start.id)
+                          "
+                          [attr.aria-describedby]="
+                            tooltipWordId() === start.id ? 'crossword-clue-' + start.id : null
+                          "
+                          (focus)="tooltipWordId.set(start.id)"
+                          (blur)="tooltipWordId.set('')"
+                          (mouseenter)="tooltipWordId.set(start.id)"
+                          (mouseleave)="tooltipWordId.set('')"
+                          (click)="onNumberClick($event, start.id, cell)"
+                        >
+                          {{ start.number }}
+                        </button>
+                        @if (tooltipWordId() === start.id) {
+                          <span
+                            [id]="'crossword-clue-' + start.id"
+                            role="tooltip"
+                            class="tooltip"
+                            >{{ clueFor(start.id) }}</span
+                          >
+                        }
+                      </span>
+                    }
+                  </span>
+                  @if (hasSolvedStart(cell)) {
+                    <span class="correct-mark" aria-label="palavra correta">✓</span>
+                  }
+                  <input
+                    type="text"
+                    inputmode="text"
+                    autocomplete="off"
+                    maxlength="1"
+                    [attr.data-cell]="id"
+                    [value]="letters()[id] ?? ''"
+                    [disabled]="locked"
+                    [attr.aria-label]="cellLabel(cell)"
+                    (input)="changeLetter(cell, $event)"
+                    (keydown)="onKeydown($event, cell)"
+                    (focus)="onInputFocus(cell)"
+                  />
+                </span>
+              } @else {
+                <span class="blank" aria-hidden="true"></span>
+              }
+            }
+          }
+        </div>
+      </div>
+
+      <aside class="clues" aria-label="Pistas da cruzadinha">
+        @for (section of clueSections(); track section.title) {
+          <section class="clue-section" [attr.aria-label]="section.title">
+            <h3>{{ section.title }}</h3>
+            <ul class="clue-list">
+              @for (word of section.words; track word.id) {
+                <li [attr.data-clue]="word.id">
+                  <button
+                    type="button"
+                    class="clue-button"
+                    [attr.aria-current]="activeWordId() === word.id ? 'true' : null"
+                    [attr.data-solved]="solvedIds().has(word.id)"
+                    (click)="selectWordById(word.id)"
+                  >
+                    <span class="clue-number">{{ word.number }}</span>
+                    <span class="clue-text"
+                      >{{ word.clue
+                      }}{{ revealedWordIds().has(word.id) ? ' (revelada)' : '' }}</span
+                    >
+                    @if (solvedIds().has(word.id) && !revealedWordIds().has(word.id)) {
+                      <span aria-label="resolvida">✓</span>
+                    }
+                  </button>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      </aside>
+    </div>
+
+    @if (allSolved()) {
+      <div class="complete" role="status">
+        <p>Cruzadinha concluída!</p>
+        <button type="button" (click)="newCrossword()">Nova cruzadinha</button>
+        <button type="button" (click)="back.emit()">Voltar ao módulo</button>
+      </div>
+    }
+  }
+
+  @if (helpOpen()) {
+    <div class="modal-overlay" (mousedown)="onOverlayMouseDown($event)">
+      <section
+        class="help-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="crossword-help-title"
+        cdkTrapFocus
+        [cdkTrapFocusAutoCapture]="true"
+      >
+        <div class="help-header">
+          <h2 id="crossword-help-title">Como funciona a cruzadinha</h2>
+          <button type="button" (click)="closeHelp()">Fechar</button>
+        </div>
+        <h3>Objetivo</h3>
+        <p>Preencha a grade com as palavras descritas nas pistas.</p>
+        <h3>Escolher uma palavra</h3>
+        <p>
+          Clique ou foque uma célula, clique no número da palavra (a definição aparece num balão),
+          clique numa pista da lista lateral ou use as setas ‹ e › acima da grade para navegar na
+          ordem dos números.
+        </p>
+        <h3>Cruzamentos</h3>
+        <p>
+          Onde duas palavras se cruzam, clique de novo na mesma célula para alternar entre
+          horizontal e vertical. Se duas palavras começam na mesma célula, os dois números aparecem
+          juntos (ex.: 1, 10) e cada clique alterna entre elas.
+        </p>
+        <h3>Digitar</h3>
+        <p>
+          Digite as letras; o cursor avança sozinho. Backspace volta, e as setas do teclado movem
+          entre células. Maiúsculas, acentos, espaços e hífens não importam.
+        </p>
+        <h3>Conferir</h3>
+        <p>
+          Com a palavra completa, pressione Enter. Se estiver certa, ela fica verde com ✓ e
+          bloqueada; se estiver errada, fica vermelha por um instante e você pode corrigir. Com a
+          palavra incompleta, nada acontece.
+        </p>
+        <h3>Revelar</h3>
+        <p>
+          No botão Revelar você pode mostrar uma célula, uma palavra inteira ou a cruzadinha toda.
+          Letras reveladas ficam em destaque âmbar.
+        </p>
+        <h3>Observação</h3>
+        <p>A cruzadinha é um jogo livre e não altera seu progresso oficial.</p>
+      </section>
+    </div>
+  }
+</section>

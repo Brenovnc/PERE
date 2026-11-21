@@ -52,3 +52,10 @@ public enum FsrsRating
     Good,
     Easy,
 }
+
+public enum EnrollmentStatus
+{
+    Pending,
+    Approved,
+    Rejected,
+}

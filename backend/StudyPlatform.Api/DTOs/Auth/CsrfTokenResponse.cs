@@ -1,3 +1,3 @@
-﻿namespace StudyPlatform.Api.DTOs.Auth;
+namespace StudyPlatform.Api.DTOs.Auth;
 
 public sealed record CsrfTokenResponse(string Token);

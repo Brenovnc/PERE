@@ -9,13 +9,12 @@ namespace StudyPlatform.Api.Services.Auth;
 
 public sealed class TeacherProfileService(ApplicationDbContext db, IPasswordHasher<Teacher> hasher, TimeProvider clock)
 {
-    public async Task<TeacherProfileResponse> GetAsync(Guid id, CancellationToken ct)
-    {
-        var teacher = await db.Teachers.AsNoTracking().Where(x => x.Id == id)
-            .Select(x => new { x.Name, x.Email, x.Education, x.Institution, PhotoAt = db.TeacherPhotos.Where(p => p.TeacherId == id).Select(p => (DateTime?)p.UpdatedAtUtc).FirstOrDefault() })
-            .SingleOrDefaultAsync(ct) ?? throw new ApiException(404, "teacher_not_found", "Perfil não encontrado.");
-        return new(teacher.Name, teacher.Email, teacher.Education, teacher.Institution, teacher.PhotoAt.HasValue, teacher.PhotoAt?.Ticks);
-    }
+    public async Task<TeacherProfileResponse> GetAsync(Guid id, CancellationToken ct) =>
+        await db.Teachers.AsNoTracking()
+            .Where(x => x.Id == id)
+            .Select(x => new TeacherProfileResponse(x.Name, x.Email, x.Education, x.Institution))
+            .SingleOrDefaultAsync(ct)
+        ?? throw NotFound();
 
     public async Task<Teacher> UpdateAsync(Guid id, UpdateTeacherProfileRequest request, CancellationToken ct)
     {
@@ -40,17 +39,10 @@ public sealed class TeacherProfileService(ApplicationDbContext db, IPasswordHash
         await db.SaveChangesAsync(ct);
     }
 
-    public async Task SavePhotoAsync(Guid id, byte[] bytes, string type, CancellationToken ct)
-    {
-        var photo = await db.TeacherPhotos.SingleOrDefaultAsync(p => p.TeacherId == id, ct);
-        if (photo is null) db.TeacherPhotos.Add(new TeacherPhoto { TeacherId = id, Data = bytes, ContentType = type, UpdatedAtUtc = clock.GetUtcNow().UtcDateTime });
-        else { photo.Data = bytes; photo.ContentType = type; photo.UpdatedAtUtc = clock.GetUtcNow().UtcDateTime; }
-        await db.SaveChangesAsync(ct);
-    }
+    private async Task<Teacher> FindAsync(Guid id, CancellationToken ct) =>
+        await db.Teachers.SingleOrDefaultAsync(x => x.Id == id, ct) ?? throw NotFound();
 
-    public Task<TeacherPhoto?> PhotoAsync(Guid id, CancellationToken ct) => db.TeacherPhotos.AsNoTracking().SingleOrDefaultAsync(p => p.TeacherId == id, ct);
-    public async Task DeletePhotoAsync(Guid id, CancellationToken ct) { await db.TeacherPhotos.Where(p => p.TeacherId == id).ExecuteDeleteAsync(ct); }
-    private async Task<Teacher> FindAsync(Guid id, CancellationToken ct) => await db.Teachers.SingleOrDefaultAsync(x => x.Id == id, ct)
-        ?? throw new ApiException(404, "teacher_not_found", "Perfil não encontrado.");
+    private static ApiException NotFound() => new(404, "teacher_not_found", "Perfil não encontrado.");
+
     private static string? BlankToNull(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

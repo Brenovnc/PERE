@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using StudyPlatform.Api.Models;
 using StudyPlatform.Api.Models.Activities;
 

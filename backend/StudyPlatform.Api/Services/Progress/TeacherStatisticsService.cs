@@ -17,8 +17,7 @@ public sealed class TeacherStatisticsService(ApplicationDbContext db, TimeProvid
         var range = ParseRange(days, from, to);
         var filterType = ParseActivityType(activityType);
         var classroomsQuery = db.Classrooms.AsNoTracking()
-            .Where(item => item.TeacherId == teacherId && item.Status == ClassroomStatus.Active)
-            .Select(item => new { item.Id, item.Name });
+            .Where(item => item.TeacherId == teacherId && item.Status == ClassroomStatus.Active);
         if (classroomId.HasValue)
         {
             var owned = await db.Classrooms.AnyAsync(item => item.Id == classroomId.Value && item.TeacherId == teacherId, ct);
@@ -27,22 +26,17 @@ public sealed class TeacherStatisticsService(ApplicationDbContext db, TimeProvid
         }
         if (moduleId.HasValue)
         {
-            var matchingClassroomIds = await db.ClassroomModules.AsNoTracking().Where(link => link.ModuleId == moduleId.Value
-                && link.Module.Status == ModuleStatus.Published && !link.Module.IsCommunityListing && link.Classroom.TeacherId == teacherId
-                && link.Classroom.Status == ClassroomStatus.Active).Select(link => link.ClassroomId).ToArrayAsync(ct);
-            classroomsQuery = classroomsQuery.Where(item => matchingClassroomIds.Contains(item.Id));
+            classroomsQuery = classroomsQuery.Where(item => item.ClassroomModules.Any(link => link.ModuleId == moduleId.Value
+                && link.Module.Status == ModuleStatus.Published && !link.Module.IsCommunityListing));
         }
-        var classrooms = await classroomsQuery.ToListAsync(ct);
-        var scopes = new List<ClassroomData>();
-        foreach (var classroom in classrooms)
-            scopes.Add(await GetClassroomDataAsync(classroom.Id, moduleId, true, ct));
+        var classrooms = await classroomsQuery.Select(item => new ClassroomInfo(item.Id, item.Name)).ToListAsync(ct);
+        var scopes = await LoadScopesAsync(classrooms, moduleId, activeStudentsOnly: true, ct);
         var students = scopes.SelectMany(scope => scope.Students).DistinctBy(student => student.Id).ToArray();
         var concepts = scopes.SelectMany(scope => scope.Concepts).DistinctBy(concept => concept.Id).ToArray();
         var states = await GetStatesAsync(students.Select(item => item.Id).ToArray(), concepts.Select(item => item.Id).ToArray(), ct);
         var distribution = Distribution(students, concepts, states);
         var modules = scopes.SelectMany(scope => scope.ModuleIds).Distinct().ToArray();
-        var attempts = await GetAttemptsAsync(students.Select(item => item.Id).ToArray(), modules, range, ct);
-        var filteredAttempts = FilterAttempts(attempts, filterType);
+        var daily = await GetDailyRowsAsync(students.Select(item => item.Id).ToArray(), modules, range, ct);
         var comparison = scopes.Select(scope =>
         {
             var progress = scope.Students.Select(student => Percent(
@@ -51,7 +45,7 @@ public sealed class TeacherStatisticsService(ApplicationDbContext db, TimeProvid
             return new ClassroomComparisonStatistics(scope.ClassroomId, scope.ClassroomName,
                 scope.Students.Count, progress.Length == 0 ? 0 : progress.Average());
         }).ToArray();
-        return new TeacherDashboardStatisticsResponse(distribution, Daily(filteredAttempts, range), comparison);
+        return new TeacherDashboardStatisticsResponse(distribution, Daily(daily, range, filterType), comparison);
     }
 
     public async Task<ClassroomStatisticsResponse> GetClassroomAsync(Guid teacherId, Guid classroomId, int days, string? from, string? to, Guid? moduleId, string? activityType, int minAttempts, CancellationToken ct)
@@ -59,15 +53,19 @@ public sealed class TeacherStatisticsService(ApplicationDbContext db, TimeProvid
         var range = ParseRange(days, from, to);
         var filterType = ParseActivityType(activityType);
         if (minAttempts is not (3 or 5 or 10)) throw InvalidFilter("O mínimo de tentativas deve ser 3, 5 ou 10.");
-        var owner = await db.Classrooms.AnyAsync(item => item.Id == classroomId && item.TeacherId == teacherId, ct);
-        if (!owner) throw NotFound("A turma não foi encontrada.");
-        var scope = await GetClassroomDataAsync(classroomId, moduleId, false, ct);
-        var states = await GetStatesAsync(scope.Students.Select(item => item.Id).ToArray(), scope.Concepts.Select(item => item.Id).ToArray(), ct);
-        var attempts = await GetAttemptsAsync(scope.Students.Select(item => item.Id).ToArray(), scope.ModuleIds, range, ct);
-        var filteredAttempts = FilterAttempts(attempts, filterType);
+        var classroom = await db.Classrooms.AsNoTracking()
+            .Where(item => item.Id == classroomId && item.TeacherId == teacherId)
+            .Select(item => new ClassroomInfo(item.Id, item.Name)).SingleOrDefaultAsync(ct)
+            ?? throw NotFound("A turma não foi encontrada.");
+        var scope = (await LoadScopesAsync([classroom], moduleId, activeStudentsOnly: false, ct)).Single();
+        if (moduleId.HasValue && scope.ModuleIds.Length == 0) throw ModuleNotLinked();
+        var studentIds = scope.Students.Select(item => item.Id).ToArray();
+        var states = await GetStatesAsync(studentIds, scope.Concepts.Select(item => item.Id).ToArray(), ct);
+        var daily = await GetDailyRowsAsync(studentIds, scope.ModuleIds, range, ct);
+        var byConcept = await GetConceptRowsAsync(studentIds, scope.ModuleIds, range, ct);
         return new ClassroomStatisticsResponse(Distribution(scope.Students, scope.Concepts, states),
-            Daily(filteredAttempts, range), TypeStatistics(attempts, filterType),
-            ErrorConcepts(filteredAttempts, minAttempts, filterType), ProgressBands(scope.Students, scope.Concepts, states));
+            Daily(daily, range, filterType), TypeStatistics(byConcept, filterType),
+            ErrorConcepts(byConcept, minAttempts, filterType), ProgressBands(scope.Students, scope.Concepts, states));
     }
 
     public async Task<StudentStatisticsResponse> GetStudentAsync(Guid teacherId, Guid classroomId, Guid studentId,
@@ -75,45 +73,53 @@ public sealed class TeacherStatisticsService(ApplicationDbContext db, TimeProvid
     {
         var range = ParseRange(days, from, to);
         var filterType = ParseActivityType(activityType);
-        var student = await db.Students.AsNoTracking()
-            .Where(item => item.Id == studentId && item.ClassroomId == classroomId && item.Classroom.TeacherId == teacherId)
-            .Select(item => new StudentInfo(item.Id)).SingleOrDefaultAsync(ct)
+        var student = await db.Enrollments.AsNoTracking()
+            .Where(item => item.StudentId == studentId && item.ClassroomId == classroomId
+                && item.Status == EnrollmentStatus.Approved && item.Classroom.TeacherId == teacherId)
+            .Select(item => new StudentInfo(item.StudentId)).SingleOrDefaultAsync(ct)
             ?? throw NotFound("O aluno não foi encontrado nesta turma.");
-        var moduleIds = await GetPublishedModuleIdsAsync(classroomId, moduleId, ct);
+        var moduleIds = await PublishedLinks([classroomId], moduleId).Select(link => link.ModuleId).ToArrayAsync(ct);
+        if (moduleId.HasValue && moduleIds.Length == 0) throw ModuleNotLinked();
         var concepts = moduleIds.Length == 0 ? [] : await db.Concepts.AsNoTracking()
             .Where(concept => concept.IsActive && moduleIds.Contains(concept.ModuleId))
             .Select(concept => new ConceptInfo(concept.Id, concept.Name)).ToListAsync(ct);
         var states = await GetStatesAsync([student.Id], concepts.Select(item => item.Id).ToArray(), ct);
-        var attempts = await GetAttemptsAsync([student.Id], moduleIds, range, ct);
-        var filteredAttempts = FilterAttempts(attempts, filterType);
+        var daily = await GetDailyRowsAsync([student.Id], moduleIds, range, ct);
+        var byConcept = await GetConceptRowsAsync([student.Id], moduleIds, range, ct);
         return new StudentStatisticsResponse(Distribution([student], concepts, states),
-            Daily(filteredAttempts, range), TypeStatistics(attempts, filterType), ErrorConcepts(filteredAttempts, 3, filterType));
+            Daily(daily, range, filterType), TypeStatistics(byConcept, filterType), ErrorConcepts(byConcept, 3, filterType));
     }
 
-    private async Task<ClassroomData> GetClassroomDataAsync(Guid classroomId, Guid? requestedModuleId, bool activeStudentsOnly, CancellationToken ct)
+    // Loads modules, students and concepts of all classrooms with one query each, instead of a query loop per classroom.
+    private async Task<List<ClassroomData>> LoadScopesAsync(IReadOnlyList<ClassroomInfo> classrooms, Guid? requestedModuleId, bool activeStudentsOnly, CancellationToken ct)
     {
-        var classroom = await db.Classrooms.AsNoTracking().Where(item => item.Id == classroomId)
-            .Select(item => new { item.Id, item.Name }).SingleOrDefaultAsync(ct)
-            ?? throw NotFound("A turma não foi encontrada.");
-        var moduleIds = await GetPublishedModuleIdsAsync(classroomId, requestedModuleId, ct);
-        var studentsQuery = db.Students.AsNoTracking().Where(student => student.ClassroomId == classroomId);
-        if (activeStudentsOnly) studentsQuery = studentsQuery.Where(student => student.IsActive);
-        var students = await studentsQuery.Select(student => new StudentInfo(student.Id)).ToListAsync(ct);
+        if (classrooms.Count == 0) return [];
+        var classroomIds = classrooms.Select(item => item.Id).ToArray();
+        var links = await PublishedLinks(classroomIds, requestedModuleId)
+            .Select(link => new { link.ClassroomId, link.ModuleId }).ToListAsync(ct);
+        var studentsQuery = db.Enrollments.AsNoTracking()
+            .Where(e => classroomIds.Contains(e.ClassroomId) && e.Status == EnrollmentStatus.Approved);
+        if (activeStudentsOnly) studentsQuery = studentsQuery.Where(e => e.Student.IsActive);
+        var students = await studentsQuery.Select(e => new { e.ClassroomId, Id = e.StudentId }).ToListAsync(ct);
+        var moduleIds = links.Select(link => link.ModuleId).Distinct().ToArray();
         var concepts = moduleIds.Length == 0 ? [] : await db.Concepts.AsNoTracking()
             .Where(concept => concept.IsActive && moduleIds.Contains(concept.ModuleId))
-            .Select(concept => new ConceptInfo(concept.Id, concept.Name)).ToListAsync(ct);
-        return new ClassroomData(classroom.Id, classroom.Name, moduleIds, students, concepts);
+            .Select(concept => new { concept.ModuleId, concept.Id, concept.Name }).ToListAsync(ct);
+
+        return classrooms.Select(classroom =>
+        {
+            var classroomModules = links.Where(link => link.ClassroomId == classroom.Id).Select(link => link.ModuleId).ToArray();
+            return new ClassroomData(classroom.Id, classroom.Name, classroomModules,
+                students.Where(student => student.ClassroomId == classroom.Id).Select(student => new StudentInfo(student.Id)).ToList(),
+                concepts.Where(concept => classroomModules.Contains(concept.ModuleId)).Select(concept => new ConceptInfo(concept.Id, concept.Name)).ToList());
+        }).ToList();
     }
 
-    private async Task<Guid[]> GetPublishedModuleIdsAsync(Guid classroomId, Guid? requestedModuleId, CancellationToken ct)
+    private IQueryable<Models.ClassroomModule> PublishedLinks(Guid[] classroomIds, Guid? requestedModuleId)
     {
-        var query = db.ClassroomModules.AsNoTracking().Where(link => link.ClassroomId == classroomId
+        var query = db.ClassroomModules.AsNoTracking().Where(link => classroomIds.Contains(link.ClassroomId)
             && link.Module.Status == ModuleStatus.Published && !link.Module.IsCommunityListing);
-        if (requestedModuleId.HasValue) query = query.Where(link => link.ModuleId == requestedModuleId.Value);
-        var moduleIds = await query.Select(link => link.ModuleId).ToArrayAsync(ct);
-        if (requestedModuleId.HasValue && moduleIds.Length == 0)
-            throw NotFound("O módulo não está publicado e associado a esta turma.");
-        return moduleIds;
+        return requestedModuleId.HasValue ? query.Where(link => link.ModuleId == requestedModuleId.Value) : query;
     }
 
     private async Task<Dictionary<(Guid StudentId, Guid ConceptId), LearningState>> GetStatesAsync(Guid[] studentIds, Guid[] conceptIds, CancellationToken ct)
@@ -125,37 +131,58 @@ public sealed class TeacherStatisticsService(ApplicationDbContext db, TimeProvid
         return rows.ToDictionary(row => (row.StudentId, row.ConceptId), row => row.LearningState);
     }
 
-    private async Task<List<AttemptInfo>> GetAttemptsAsync(Guid[] studentIds, Guid[] moduleIds, DateRange range, CancellationToken ct)
+    private IQueryable<ActivityAttempt> AttemptsQuery(Guid[] studentIds, Guid[] moduleIds, DateRange range)
     {
         var start = range.Start.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
         var end = range.End.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
-        if (studentIds.Length == 0 || moduleIds.Length == 0) return [];
-        return await db.ActivityAttempts.AsNoTracking()
+        return db.ActivityAttempts.AsNoTracking()
             .Where(attempt => studentIds.Contains(attempt.StudentId) && moduleIds.Contains(attempt.Concept.ModuleId)
                 && attempt.StudySession.Mode == StudySessionMode.Normal
-                && attempt.AnsweredAtUtc >= start && attempt.AnsweredAtUtc < end)
-            .Select(attempt => new AttemptInfo(attempt.ConceptId, attempt.Concept.Name, attempt.ActivityType,
-                attempt.AnsweredAtUtc, attempt.WasCorrect))
+                && attempt.AnsweredAtUtc >= start && attempt.AnsweredAtUtc < end);
+    }
+
+    // Aggregated in SQL (GROUP BY day and type): only a few rows per day travel from the database.
+    private async Task<List<DailyRow>> GetDailyRowsAsync(Guid[] studentIds, Guid[] moduleIds, DateRange range, CancellationToken ct)
+    {
+        if (studentIds.Length == 0 || moduleIds.Length == 0) return [];
+        var rows = await AttemptsQuery(studentIds, moduleIds, range)
+            .GroupBy(attempt => new { Day = attempt.AnsweredAtUtc.Date, Type = attempt.ActivityType })
+            .Select(group => new { group.Key.Day, group.Key.Type, Total = group.Count(), Correct = group.Count(attempt => attempt.WasCorrect) })
+            .ToListAsync(ct);
+        return rows.Select(row => new DailyRow(DateOnly.FromDateTime(row.Day), row.Type, row.Total, row.Correct)).ToList();
+    }
+
+    private async Task<List<ConceptTypeRow>> GetConceptRowsAsync(Guid[] studentIds, Guid[] moduleIds, DateRange range, CancellationToken ct)
+    {
+        if (studentIds.Length == 0 || moduleIds.Length == 0) return [];
+        return await AttemptsQuery(studentIds, moduleIds, range)
+            .GroupBy(attempt => new { attempt.ConceptId, attempt.Concept.Name, Type = attempt.ActivityType })
+            .Select(group => new ConceptTypeRow(group.Key.ConceptId, group.Key.Name, group.Key.Type,
+                group.Count(), group.Count(attempt => attempt.WasCorrect)))
             .ToListAsync(ct);
     }
 
-    private IReadOnlyList<DailyLearningStatistics> Daily(List<AttemptInfo> attempts, DateRange range)
+    private static IReadOnlyList<DailyLearningStatistics> Daily(List<DailyRow> rows, DateRange range, ActivityType? filterType)
     {
+        var filtered = rows.Where(row => filterType is null || row.Type == filterType).ToArray();
         var count = range.End.DayNumber - range.Start.DayNumber + 1;
         return Enumerable.Range(0, count).Select(offset =>
         {
             var date = range.Start.AddDays(offset);
-            var daily = attempts.Where(item => DateOnly.FromDateTime(item.AnsweredAtUtc) == date).ToArray();
-            var scored = daily.Where(item => ScoredTypes.Contains(item.Type)).ToArray();
-            return new DailyLearningStatistics(date, daily.Length,
-                scored.Length == 0 ? null : Percent(scored.Count(item => item.WasCorrect), scored.Length));
+            var daily = filtered.Where(row => row.Date == date).ToArray();
+            var scored = daily.Where(row => ScoredTypes.Contains(row.Type)).ToArray();
+            var scoredTotal = scored.Sum(row => row.Total);
+            return new DailyLearningStatistics(date, daily.Sum(row => row.Total),
+                scoredTotal == 0 ? null : Percent(scored.Sum(row => row.Correct), scoredTotal));
         }).ToArray();
     }
 
-    private static IReadOnlyList<ActivityTypeStatistics> TypeStatistics(List<AttemptInfo> attempts, ActivityType? filterType) =>
+    private static IReadOnlyList<ActivityTypeStatistics> TypeStatistics(List<ConceptTypeRow> rows, ActivityType? filterType) =>
         ScoredTypes.Where(type => filterType is null || type == filterType).Select(type =>
         {
-            var matching = attempts.Where(item => item.Type == type).ToArray();
+            var matching = rows.Where(row => row.Type == type).ToArray();
+            var total = matching.Sum(row => row.Total);
+            var correct = matching.Sum(row => row.Correct);
             var label = type switch
             {
                 ActivityType.TrueFalse => "TRUE_FALSE",
@@ -164,13 +191,13 @@ public sealed class TeacherStatisticsService(ApplicationDbContext db, TimeProvid
                 ActivityType.Ordering => "ORDERING",
                 _ => type.ToString().ToUpperInvariant(),
             };
-            return new ActivityTypeStatistics(label, matching.Length, matching.Count(item => item.WasCorrect),
-                matching.Length == 0 ? null : Percent(matching.Count(item => item.WasCorrect), matching.Length));
+            return new ActivityTypeStatistics(label, total, correct, total == 0 ? null : Percent(correct, total));
         }).ToArray();
 
-    private static IReadOnlyList<ErrorConceptStatistics> ErrorConcepts(List<AttemptInfo> attempts, int minAttempts, ActivityType? filterType) =>
-        attempts.Where(item => ScoredTypes.Contains(item.Type) && (filterType is null || item.Type == filterType)).GroupBy(item => new { item.ConceptId, item.Name })
-            .Select(group => new { group.Key.ConceptId, group.Key.Name, Attempts = group.Count(), Errors = group.Count(item => !item.WasCorrect) })
+    private static IReadOnlyList<ErrorConceptStatistics> ErrorConcepts(List<ConceptTypeRow> rows, int minAttempts, ActivityType? filterType) =>
+        rows.Where(row => ScoredTypes.Contains(row.Type) && (filterType is null || row.Type == filterType))
+            .GroupBy(row => new { row.ConceptId, row.Name })
+            .Select(group => new { group.Key.ConceptId, group.Key.Name, Attempts = group.Sum(row => row.Total), Errors = group.Sum(row => row.Total - row.Correct) })
             .Where(item => item.Attempts >= minAttempts)
             .OrderByDescending(item => item.Errors / (double)item.Attempts).ThenByDescending(item => item.Attempts)
             .Take(5).Select(item => new ErrorConceptStatistics(item.ConceptId, item.Name, item.Attempts,
@@ -207,10 +234,7 @@ public sealed class TeacherStatisticsService(ApplicationDbContext db, TimeProvid
     }
 
     private static int Percent(int value, int total) => total == 0 ? 0 : (int)Math.Round((double)value * 100 / total, MidpointRounding.AwayFromZero);
-    private static void ValidateDays(int days)
-    {
-        if (days is not (7 or 30 or 90)) throw new ApiException(400, "invalid_statistics_days", "O período deve ser 7, 30 ou 90 dias.");
-    }
+
     private DateRange ParseRange(int days, string? from, string? to)
     {
         var today = DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime);
@@ -227,19 +251,22 @@ public sealed class TeacherStatisticsService(ApplicationDbContext db, TimeProvid
         if (days is not (7 or 30 or 90 or 180)) throw InvalidFilter("O período deve ser 7, 30, 90 ou 180 dias.");
         return new DateRange(today.AddDays(-(days - 1)), today);
     }
+
     private static ActivityType? ParseActivityType(string? value)
     {
         if (value is null) return null;
         if (Enum.TryParse<ActivityType>(value, true, out var parsed) && ScoredTypes.Contains(parsed)) return parsed;
         throw InvalidFilter("O tipo de atividade deve ser TRUE_FALSE, FILL_BLANK, GUESS_CONCEPT ou ORDERING.");
     }
-    private static List<AttemptInfo> FilterAttempts(List<AttemptInfo> attempts, ActivityType? type) =>
-        type is null ? attempts : attempts.Where(item => item.Type == type.Value).ToList();
+
     private static ApiException InvalidFilter(string message) => new(400, "invalid_statistics_filter", message);
     private static ApiException NotFound(string message) => new(404, "statistics_scope_not_found", message);
+    private static ApiException ModuleNotLinked() => NotFound("O módulo não está publicado e associado a esta turma.");
+    private sealed record ClassroomInfo(Guid Id, string Name);
     private sealed record StudentInfo(Guid Id);
     private sealed record ConceptInfo(Guid Id, string Name);
-    private sealed record AttemptInfo(Guid ConceptId, string Name, ActivityType Type, DateTime AnsweredAtUtc, bool WasCorrect);
+    private sealed record DailyRow(DateOnly Date, ActivityType Type, int Total, int Correct);
+    private sealed record ConceptTypeRow(Guid ConceptId, string Name, ActivityType Type, int Total, int Correct);
     private sealed record DateRange(DateOnly Start, DateOnly End);
     private sealed record ClassroomData(Guid ClassroomId, string ClassroomName, Guid[] ModuleIds, List<StudentInfo> Students, List<ConceptInfo> Concepts);
 }

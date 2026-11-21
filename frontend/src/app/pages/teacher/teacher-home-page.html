@@ -1,0 +1,122 @@
+<main class="teacher-page">
+  <app-page-header
+    eyebrow="Página inicial"
+    [title]="'Olá, ' + firstName()"
+    description="Organize seus conteúdos e acompanhe suas turmas."
+  >
+    <a class="action" routerLink="/teacher/modules">Novo módulo</a>
+    <a class="action secondary" routerLink="/teacher/classrooms">Nova turma</a>
+  </app-page-header>
+
+  @if (loading()) {
+    <p role="status">Carregando…</p>
+  }
+  @if (error()) {
+    <p role="alert">{{ error() }}</p>
+  }
+
+  @if (summary(); as summary) {
+    <section class="metrics" aria-label="Resumo">
+      <a routerLink="/teacher/modules">
+        <span class="metric-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <path d="M6 3.5h8l4 4V20H6z" />
+            <path d="M14 3.5v4h4M9 11h6M9 14.5h6M9 18h4" />
+          </svg>
+        </span>
+        <span>Módulos</span>
+        <strong>{{ summary.modules }}</strong>
+      </a>
+      <a routerLink="/teacher/classrooms">
+        <span class="metric-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <circle cx="8" cy="7" r="2.5" />
+            <path d="M2.75 20v-1.5a5.25 5.25 0 0 1 10.5 0V20" />
+            <circle cx="16.5" cy="8" r="2" />
+            <path d="M14.5 14.5a4.25 4.25 0 0 1 6.75 3.4V20h-3" />
+          </svg>
+        </span>
+        <span>Turmas ativas</span>
+        <strong>{{ summary.activeClassrooms }}</strong>
+      </a>
+      <a routerLink="/teacher/dashboard">
+        <span class="metric-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <circle cx="8" cy="7" r="2.5" />
+            <path d="M2.75 20v-1.25a5.25 5.25 0 0 1 10.5 0V20" />
+            <path d="m16 10.5 1.75 1.75L21 8.75" />
+          </svg>
+        </span>
+        <span>Alunos ativos</span>
+        <strong>{{ summary.activeStudents }}</strong>
+      </a>
+    </section>
+  }
+
+  <div class="columns">
+    <section class="card-panel">
+      <header>
+        <h2>Módulos recentes</h2>
+        <a class="see-all" routerLink="/teacher/modules">Ver todos</a>
+      </header>
+      @for (module of modules().slice(0, 4); track module.id) {
+        <a class="item" routerLink="/teacher/modules">
+          <strong>{{ module.title }}</strong>
+          <span
+            >{{ statusLabels[module.status] }} · {{ module.activeConceptCount }} conceitos
+            ativos</span
+          >
+        </a>
+      } @empty {
+        <app-empty-state>Nenhum módulo cadastrado.</app-empty-state>
+      }
+    </section>
+    <section class="card-panel">
+      <header>
+        <h2>Turmas ativas</h2>
+        <a class="see-all" routerLink="/teacher/classrooms">Ver todas</a>
+      </header>
+      @for (classroom of classrooms().slice(0, 4); track classroom.id) {
+        <a class="item" routerLink="/teacher/dashboard" [queryParams]="{ classroom: classroom.id }">
+          <strong>{{ classroom.name }}</strong>
+          <span
+            >{{ classroom.studentCount }} alunos · {{ classroom.moduleCount }} módulos
+            @if (classroom.pendingCount > 0) {
+              · {{ classroom.pendingCount }} aguardando aprovação
+            }
+          </span>
+        </a>
+      } @empty {
+        <app-empty-state>Nenhuma turma ativa.</app-empty-state>
+      }
+    </section>
+  </div>
+
+  @if (!loading() && completedSteps() < steps().length) {
+    <section class="card-panel onboarding">
+      <h2>Primeiros passos</h2>
+      <div
+        class="onboarding-progress"
+        role="progressbar"
+        aria-label="Primeiros passos concluídos"
+        aria-valuemin="0"
+        [attr.aria-valuemax]="steps().length"
+        [attr.aria-valuenow]="completedSteps()"
+      >
+        <span [style.width.%]="(completedSteps() / steps().length) * 100"></span>
+      </div>
+      <ul>
+        @for (step of steps(); track step.label) {
+          <li [attr.data-done]="step.done">
+            <span class="step-status" aria-hidden="true"></span>
+            @if (step.done) {
+              <span>{{ step.label }}</span>
+            } @else {
+              <a [routerLink]="step.path">{{ step.label }}</a>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+  }
+</main>

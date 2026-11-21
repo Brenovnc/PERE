@@ -1,4 +1,4 @@
-﻿namespace StudyPlatform.Api.DTOs.Learning;
+namespace StudyPlatform.Api.DTOs.Learning;
 
 public sealed record StudentModuleResponse(
     Guid Id,
@@ -17,10 +17,7 @@ public sealed record StudentModuleResponse(
     IReadOnlyList<StudentModuleConceptOption>? Concepts = null,
     bool CrosswordEnabled = false,
     bool CrosswordAllowAllWords = false,
-    bool AllowAdvanceReview = false,
-    bool? AdvanceReviewPerformed = null,
     string? TeacherName = null,
-    string? TeacherInstitution = null,
-    long? TeacherPhotoVersion = null);
+    string? TeacherInstitution = null);
 
 public sealed record StudentModuleConceptOption(Guid Id, string Name);

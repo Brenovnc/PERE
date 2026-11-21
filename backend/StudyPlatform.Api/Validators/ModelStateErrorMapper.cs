@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using StudyPlatform.Api.DTOs.Common;
 
 namespace StudyPlatform.Api.Validators;

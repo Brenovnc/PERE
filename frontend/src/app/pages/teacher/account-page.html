@@ -1,0 +1,97 @@
+<main class="teacher-page">
+  <app-page-header eyebrow="Perfil" title="Meu perfil" />
+  <div class="content">
+    @if (error()) {
+      <p role="alert">{{ error() }}</p>
+    }
+    @if (message()) {
+      <p role="status" aria-live="polite">{{ message() }}</p>
+    }
+
+    <section class="card-panel">
+      <div class="profile-top">
+        <div class="avatar" aria-hidden="true">{{ initial() }}</div>
+        <div>
+          <h2>{{ displayName() }}</h2>
+          <p>{{ profile()?.email || auth.user()?.email }}</p>
+        </div>
+      </div>
+      @if (!editing()) {
+        <dl>
+          <dt>Nome</dt>
+          <dd>{{ profile()?.name || '—' }}</dd>
+          <dt>E-mail</dt>
+          <dd>{{ profile()?.email || '—' }}<small>O e-mail não pode ser alterado.</small></dd>
+          <dt>Formação</dt>
+          <dd>{{ profile()?.education || 'Não informado' }}</dd>
+          <dt>Instituição</dt>
+          <dd>{{ profile()?.institution || 'Não informado' }}</dd>
+        </dl>
+        @if (profile() && !profile()?.education && !profile()?.institution) {
+          <p>Complete seu perfil adicionando formação e instituição.</p>
+        }
+        <button type="button" (click)="startEditing()">Editar perfil</button>
+      } @else {
+        <form (submit)="save($event)">
+          <label
+            >Nome<input
+              name="name"
+              required
+              maxlength="120"
+              aria-describedby="profile-name-help"
+              [value]="profile()?.name ?? displayName()"
+          /></label>
+          <small id="profile-name-help">Nome exibido na plataforma.</small>
+          <label
+            >Formação<input name="education" maxlength="160" [value]="profile()?.education ?? ''"
+          /></label>
+          <label
+            >Instituição<input
+              name="institution"
+              maxlength="160"
+              [value]="profile()?.institution ?? ''"
+          /></label>
+          <div class="actions">
+            <button type="submit" [disabled]="busy()">{{ busy() ? 'Salvando…' : 'Salvar' }}</button>
+            <button type="button" [disabled]="busy()" (click)="editing.set(false)">Cancelar</button>
+          </div>
+        </form>
+      }
+    </section>
+
+    <section class="card-panel">
+      <h2>Alterar senha</h2>
+      <form (submit)="changePassword($event)">
+        <label
+          >Senha atual<input
+            name="currentPassword"
+            type="password"
+            autocomplete="current-password"
+            required
+        /></label>
+        <label
+          >Nova senha<input
+            name="newPassword"
+            type="password"
+            autocomplete="new-password"
+            required
+            minlength="8"
+            maxlength="128"
+            aria-describedby="password-help"
+        /></label>
+        <small id="password-help">Use pelo menos 8 caracteres.</small>
+        <label
+          >Confirmar nova senha<input
+            name="confirmNewPassword"
+            type="password"
+            autocomplete="new-password"
+            required
+        /></label>
+        <button type="submit" [disabled]="busy()">
+          {{ busy() ? 'Salvando…' : 'Atualizar senha' }}
+        </button>
+      </form>
+    </section>
+    <button type="button" (click)="logout()">Sair da conta</button>
+  </div>
+</main>

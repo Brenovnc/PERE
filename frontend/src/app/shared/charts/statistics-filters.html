@@ -1,0 +1,108 @@
+<div class="filters">
+  <label class="field" [attr.data-disabled]="disablePeriod() || null">
+    <span class="field-label"
+      >Período
+      @if (disablePeriod()) {
+        <span class="unavailable">Indisponível</span>
+      }
+    </span>
+    <select #period [disabled]="disablePeriod()" (change)="changePeriod(period.value)">
+      @for (days of [7, 30, 90, 180]; track days) {
+        <option [value]="days" [selected]="!value().custom && (value().days ?? 30) === days">
+          {{ days }} dias
+        </option>
+      }
+      <option value="custom" [selected]="value().custom">Personalizado</option>
+    </select>
+    <small class="help" [attr.data-visible]="disablePeriod()">Não se aplica a este gráfico</small>
+  </label>
+
+  @if (value().custom) {
+    <label class="field" [attr.data-disabled]="disablePeriod() || null">
+      <span class="field-label">De</span>
+      <input
+        #from
+        type="date"
+        [disabled]="disablePeriod()"
+        [min]="fromMin()"
+        [max]="value().to || maxToday"
+        [value]="value().from ?? ''"
+        (change)="update({ from: from.value || undefined })"
+      />
+      <small class="help" [attr.data-visible]="disablePeriod()">Não se aplica a este gráfico</small>
+    </label>
+    <label class="field" [attr.data-disabled]="disablePeriod() || null">
+      <span class="field-label">Até</span>
+      <input
+        #to
+        type="date"
+        [disabled]="disablePeriod()"
+        [min]="value().from || fromMin()"
+        [max]="toMax()"
+        [value]="value().to ?? ''"
+        (change)="update({ to: to.value || undefined })"
+      />
+      <small class="help" [attr.data-visible]="disablePeriod()">Não se aplica a este gráfico</small>
+    </label>
+  }
+
+  <label class="field">
+    <span class="field-label">Módulo</span>
+    <select #module (change)="update({ moduleId: module.value || undefined })">
+      <option value="" [selected]="!value().moduleId">Todos os módulos</option>
+      @for (item of modules(); track item.id) {
+        <option [value]="item.id" [selected]="value().moduleId === item.id">
+          {{ item.label }}
+        </option>
+      }
+    </select>
+    <small class="help" data-visible="false">Não se aplica a este gráfico</small>
+  </label>
+
+  <label class="field" [attr.data-disabled]="disableActivityType() || null">
+    <span class="field-label"
+      >Tipo de atividade
+      @if (disableActivityType()) {
+        <span class="unavailable">Indisponível</span>
+      }
+    </span>
+    <select
+      #type
+      [disabled]="disableActivityType()"
+      (change)="update({ activityType: type.value || undefined })"
+    >
+      <option value="" [selected]="!value().activityType">Todos os tipos</option>
+      @for (item of types; track item) {
+        <option [value]="item" [selected]="value().activityType === item">
+          {{ activityTypeLabel(item) }}
+        </option>
+      }
+    </select>
+    <small class="help" [attr.data-visible]="disableActivityType()"
+      >Não se aplica a este gráfico</small
+    >
+  </label>
+
+  @if (showMinAttempts()) {
+    <label class="field" [attr.data-disabled]="disableMinAttempts() || null">
+      <span class="field-label"
+        >Mínimo de tentativas por conceito
+        @if (disableMinAttempts()) {
+          <span class="unavailable">Indisponível</span>
+        }
+      </span>
+      <select #attempts [disabled]="disableMinAttempts()" (change)="setMinAttempts(attempts.value)">
+        @for (count of [3, 5, 10]; track count) {
+          <option [value]="count" [selected]="(value().minAttempts ?? 3) === count">
+            {{ count }}
+          </option>
+        }
+      </select>
+      <small class="help" [attr.data-visible]="disableMinAttempts()"
+        >Não se aplica a este gráfico</small
+      >
+    </label>
+  }
+
+  <button type="button" class="clear" (click)="clear()">Limpar filtros</button>
+</div>

@@ -32,10 +32,28 @@ public sealed class ModuleTransferService(
 
     public async Task<ModuleExportFile> ExportAsync(Guid teacherId, Guid moduleId, CancellationToken ct)
     {
-        var module = await ContentGraph(teacherId, moduleId).AsNoTrackingWithIdentityResolution().AsSplitQuery().SingleOrDefaultAsync(ct)
+        var module = await LoadContentGraphAsync(db.Modules.Where(m => m.TeacherId == teacherId && m.Id == moduleId), ct)
             ?? throw NotFound();
+        return new ModuleExportFile($"{SafeFileName(module.Title)}.json", Serialize(BuildDocument(module)));
+    }
+
+    /// <summary>
+    /// Public, read-only export of a community listing, used by visitor mode. Returns null when the
+    /// module does not exist or is not a community listing.
+    /// </summary>
+    public async Task<byte[]?> ExportCommunityListingAsync(Guid moduleId, CancellationToken ct)
+    {
+        var module = await LoadContentGraphAsync(db.Modules.Where(m => m.Id == moduleId && m.IsCommunityListing), ct);
+        return module is null ? null : Serialize(BuildDocument(module));
+    }
+
+    private static byte[] Serialize(ModuleExchangeDocument document) =>
+        Encoding.UTF8.GetBytes(JsonSerializer.Serialize(document, JsonOptions));
+
+    private static ModuleExchangeDocument BuildDocument(Module module)
+    {
         var externalIds = CreateExternalIds(module.Concepts);
-        var document = new ModuleExchangeDocument
+        return new ModuleExchangeDocument
         {
             SchemaVersion = CurrentSchemaVersion,
             Module = new ModuleExchange
@@ -47,7 +65,6 @@ public sealed class ModuleTransferService(
                 Version = module.Version,
                 CrosswordEnabled = module.CrosswordEnabled,
                 CrosswordAllowAllWords = module.CrosswordAllowAllWords,
-                AllowAdvanceReview = module.AllowAdvanceReview,
                 Concepts = module.Concepts.OrderBy(c => c.CreatedAtUtc).ThenBy(c => c.Id).Select(c => new ConceptExchange
                 {
                     ExternalId = externalIds[c.Id],
@@ -64,21 +81,32 @@ public sealed class ModuleTransferService(
                     Prerequisites = c.Prerequisites.Select(edge => externalIds[edge.PrerequisiteConceptId])
                         .Order(StringComparer.Ordinal).ToList(),
                     TrueFalseActivities = c.RecognitionActivities.OrderBy(a => a.CreatedAtUtc).ThenBy(a => a.Id)
-                        .Select(a => new TrueFalseExchange { Statement = a.Statement, IsCorrect = a.IsCorrect,
-                            Explanation = a.Explanation, IsActive = a.IsActive }).ToList(),
+                        .Select(a => new TrueFalseExchange
+                        {
+                            Statement = a.Statement,
+                            IsCorrect = a.IsCorrect,
+                            Explanation = a.Explanation,
+                            IsActive = a.IsActive
+                        }).ToList(),
                     FillBlankActivities = c.FillBlankActivities.OrderBy(a => a.CreatedAtUtc).ThenBy(a => a.Id)
-                        .Select(a => new FillBlankExchange { Text = a.Text, IsActive = a.IsActive,
+                        .Select(a => new FillBlankExchange
+                        {
+                            Text = a.Text,
+                            IsActive = a.IsActive,
                             Answers = a.Answers.OrderBy(answer => answer.SlotNumber)
                                 .Select(answer => new FillBlankAnswerExchange { SlotNumber = answer.SlotNumber, CorrectText = answer.CorrectText }).ToList(),
-                            Distractors = a.Distractors.OrderBy(item => item.Id).Select(item => item.Text).ToList() }).ToList(),
+                            Distractors = a.Distractors.OrderBy(item => item.Id).Select(item => item.Text).ToList()
+                        }).ToList(),
                     OrderingActivities = c.OrderingActivities.OrderBy(a => a.CreatedAtUtc).ThenBy(a => a.Id)
-                        .Select(a => new OrderingExchange { Instruction = a.Instruction, IsActive = a.IsActive,
-                            Items = a.Items.OrderBy(item => item.Position).Select(item => item.Text).ToList() }).ToList(),
+                        .Select(a => new OrderingExchange
+                        {
+                            Instruction = a.Instruction,
+                            IsActive = a.IsActive,
+                            Items = a.Items.OrderBy(item => item.Position).Select(item => item.Text).ToList()
+                        }).ToList(),
                 }).ToList(),
             },
         };
-        var content = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(document, JsonOptions));
-        return new ModuleExportFile($"{SafeFileName(module.Title)}.json", content);
     }
 
     public async Task<ModuleDetailsResponse> ImportAsync(Guid teacherId, string json, CancellationToken ct)
@@ -105,12 +133,16 @@ public sealed class ModuleTransferService(
         var now = clock.GetUtcNow().UtcDateTime;
         var imported = new Module
         {
-            TeacherId = teacherId, Title = source.Title.Trim(), Description = Clean(source.Description),
-            Subject = source.Subject.Trim(), Version = source.Version, Status = ModuleStatus.Draft,
+            TeacherId = teacherId,
+            Title = source.Title.Trim(),
+            Description = Clean(source.Description),
+            Subject = source.Subject.Trim(),
+            Version = source.Version,
+            Status = ModuleStatus.Draft,
             CrosswordEnabled = source.CrosswordEnabled,
             CrosswordAllowAllWords = source.CrosswordEnabled && source.CrosswordAllowAllWords,
-            AllowAdvanceReview = source.AllowAdvanceReview,
-            CreatedAtUtc = now, UpdatedAtUtc = now,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now,
         };
         var concepts = source.Concepts.ToDictionary(x => x.ExternalId, _ => new Concept(), StringComparer.Ordinal);
         foreach (var item in source.Concepts)
@@ -132,8 +164,12 @@ public sealed class ModuleTransferService(
             foreach (var activity in item.TrueFalseActivities!)
                 concept.RecognitionActivities.Add(new RecognitionActivity
                 {
-                    Statement = activity.Statement.Trim(), IsCorrect = activity.IsCorrect, Explanation = activity.Explanation.Trim(),
-                    IsActive = activity.IsActive, CreatedAtUtc = now, UpdatedAtUtc = now,
+                    Statement = activity.Statement.Trim(),
+                    IsCorrect = activity.IsCorrect,
+                    Explanation = activity.Explanation.Trim(),
+                    IsActive = activity.IsActive,
+                    CreatedAtUtc = now,
+                    UpdatedAtUtc = now,
                 });
             foreach (var activity in item.FillBlankActivities!)
             {
@@ -148,7 +184,10 @@ public sealed class ModuleTransferService(
             {
                 var ordering = new OrderingActivity
                 {
-                    Instruction = activity.Instruction.Trim(), IsActive = activity.IsActive, CreatedAtUtc = now, UpdatedAtUtc = now,
+                    Instruction = activity.Instruction.Trim(),
+                    IsActive = activity.IsActive,
+                    CreatedAtUtc = now,
+                    UpdatedAtUtc = now,
                 };
                 for (var i = 0; i < activity.Items!.Count; i++)
                     ordering.Items.Add(new OrderingActivityItem { Position = i, Text = activity.Items[i].Trim() });
@@ -173,7 +212,7 @@ public sealed class ModuleTransferService(
         return new ModuleDetailsResponse(imported.Id, imported.Title, imported.Description, imported.Subject,
             imported.Version, imported.Status, imported.CreatedAtUtc, imported.UpdatedAtUtc,
             imported.Concepts.OrderBy(c => c.Name).Select(ConceptResponseMapper.Map).ToArray(),
-            imported.CrosswordEnabled, imported.CrosswordAllowAllWords, imported.AllowAdvanceReview);
+            imported.CrosswordEnabled, imported.CrosswordAllowAllWords);
     }
 
     private Dictionary<string, string[]> Validate(ModuleExchangeDocument document)
@@ -244,7 +283,7 @@ public sealed class ModuleTransferService(
         return Arrays(errors);
     }
 
-    private static void CheckKeywords(ConceptExchange c, string path, Action<string,string,string> add)
+    private static void CheckKeywords(ConceptExchange c, string path, Action<string, string, string> add)
     {
         if (c.Keywords is null) { add($"{path}.keywords", "required", "A lista de keywords é obrigatória."); return; }
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -255,14 +294,14 @@ public sealed class ModuleTransferService(
             else if (!seen.Add(x.Value.Trim())) add($"{path}.keywords[{i}]", "duplicate_keyword", "Keywords duplicadas não são permitidas.");
         }
     }
-    private static void CheckClues(ConceptExchange c, string path, Action<string,string,string> add)
+    private static void CheckClues(ConceptExchange c, string path, Action<string, string, string> add)
     {
         if (c.Clues is null) { add($"{path}.clues", "required", "A lista de pistas é obrigatória."); return; }
         for (var i = 0; i < c.Clues.Count; i++)
             if (c.Clues[i] is null || string.IsNullOrWhiteSpace(c.Clues[i].Text) || c.Clues[i].Text.Length > 1000)
                 add($"{path}.clues[{i}]", "invalid_clue", "Obrigatória, limite de 1000 caracteres.");
     }
-    private static void CheckTrueFalse(ConceptExchange c, string path, Action<string,string,string> add)
+    private static void CheckTrueFalse(ConceptExchange c, string path, Action<string, string, string> add)
     {
         if (c.TrueFalseActivities is null) { add($"{path}.trueFalseActivities", "required", "A lista de atividades é obrigatória."); return; }
         for (var i = 0; i < c.TrueFalseActivities.Count; i++)
@@ -273,7 +312,7 @@ public sealed class ModuleTransferService(
                 add($"{path}.trueFalseActivities[{i}]", "invalid_activity", "Afirmação e explicação são obrigatórias, até 2000 caracteres.");
         }
     }
-    private static void CheckFillBlanks(ConceptExchange c, string path, Action<string,string,string> add)
+    private static void CheckFillBlanks(ConceptExchange c, string path, Action<string, string, string> add)
     {
         if (c.FillBlankActivities is null) { add($"{path}.fillBlankActivities", "required", "A lista de lacunas é obrigatória."); return; }
         for (var i = 0; i < c.FillBlankActivities.Count; i++)
@@ -303,7 +342,7 @@ public sealed class ModuleTransferService(
             }
         }
     }
-    private static void CheckOrdering(ConceptExchange c, string path, Action<string,string,string> add)
+    private static void CheckOrdering(ConceptExchange c, string path, Action<string, string, string> add)
     {
         if (c.OrderingActivities is null) { add($"{path}.orderingActivities", "required", "A lista de ordenação é obrigatória."); return; }
         for (var i = 0; i < c.OrderingActivities.Count; i++)
@@ -320,30 +359,33 @@ public sealed class ModuleTransferService(
         }
     }
 
-    private static Dictionary<string,string[]> Arrays(Dictionary<string,List<string>> source) =>
+    private static Dictionary<string, string[]> Arrays(Dictionary<string, List<string>> source) =>
         source.ToDictionary(pair => pair.Key, pair => pair.Value.ToArray(), StringComparer.Ordinal);
-    private static ApiException ImportError(string code, string message, IReadOnlyDictionary<string,string[]>? errors = null) =>
+    private static ApiException ImportError(string code, string message, IReadOnlyDictionary<string, string[]>? errors = null) =>
         new((int)HttpStatusCode.BadRequest, code, message, errors);
     private static ApiException NotFound() => new((int)HttpStatusCode.NotFound, "module_not_found", "O módulo não foi encontrado.");
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
-    private IQueryable<Module> ContentGraph(Guid teacherId, Guid moduleId) =>
-        db.Modules.Where(m => m.TeacherId == teacherId && m.Id == moduleId)
+    private static Task<Module?> LoadContentGraphAsync(IQueryable<Module> modules, CancellationToken ct) =>
+        modules
             .Include(m => m.Concepts).ThenInclude(c => c.Keywords)
             .Include(m => m.Concepts).ThenInclude(c => c.Clues)
             .Include(m => m.Concepts).ThenInclude(c => c.Prerequisites)
             .Include(m => m.Concepts).ThenInclude(c => c.RecognitionActivities)
             .Include(m => m.Concepts).ThenInclude(c => c.FillBlankActivities).ThenInclude(a => a.Answers)
             .Include(m => m.Concepts).ThenInclude(c => c.FillBlankActivities).ThenInclude(a => a.Distractors)
-            .Include(m => m.Concepts).ThenInclude(c => c.OrderingActivities).ThenInclude(a => a.Items);
+            .Include(m => m.Concepts).ThenInclude(c => c.OrderingActivities).ThenInclude(a => a.Items)
+            .AsNoTrackingWithIdentityResolution()
+            .AsSplitQuery()
+            .SingleOrDefaultAsync(ct);
 
-    private static Dictionary<Guid,string> CreateExternalIds(IEnumerable<Concept> concepts)
+    private static Dictionary<Guid, string> CreateExternalIds(IEnumerable<Concept> concepts)
     {
         var ordered = concepts.OrderBy(c => c.CreatedAtUtc).ThenBy(c => c.Id).ToArray();
         var reserved = ordered.Where(c => !string.IsNullOrWhiteSpace(c.ExternalId))
             .Select(c => c.ExternalId!).ToHashSet(StringComparer.Ordinal);
         var used = new HashSet<string>(["module"], StringComparer.Ordinal);
-        var result = new Dictionary<Guid,string>();
+        var result = new Dictionary<Guid, string>();
         foreach (var concept in ordered)
         {
             var baseId = string.IsNullOrWhiteSpace(concept.ExternalId) ? Slug(concept.Name) : concept.ExternalId;
@@ -356,7 +398,8 @@ public sealed class ModuleTransferService(
             result.Add(concept.Id, external);
         }
         return result;
-    }    private static string Slug(string value)
+    }
+    private static string Slug(string value)
     {
         var normalized = value.Normalize(NormalizationForm.FormD);
         var ascii = new string(normalized.Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark).ToArray());

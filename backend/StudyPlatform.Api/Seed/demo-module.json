@@ -1,0 +1,877 @@
+{
+  "schemaVersion": 1,
+  "module": {
+    "externalId": "fundamentos-de-redes",
+    "title": "Fundamentos de redes",
+    "description": "Módulo de demonstração do PERE: 8 conceitos de redes de computadores, com pré-requisitos entre eles.",
+    "subject": "Redes de Computadores",
+    "version": 1,
+    "crosswordEnabled": true,
+    "crosswordAllowAllWords": true,
+    "concepts": [
+      {
+        "externalId": "rede",
+        "name": "Rede de computadores",
+        "definition": "Uma rede de computadores é um conjunto de dispositivos interligados que trocam dados entre si por meio de enlaces físicos ou sem fio.",
+        "isActive": true,
+        "keywords": [
+          {
+            "value": "dispositivos interligados",
+            "isActive": true
+          },
+          {
+            "value": "trocam dados",
+            "isActive": true
+          },
+          {
+            "value": "enlaces",
+            "isActive": true
+          }
+        ],
+        "clues": [
+          {
+            "text": "Permite que vários computadores compartilhem informações.",
+            "isActive": true
+          },
+          {
+            "text": "Pode ser local, como a de uma casa, ou mundial, como a internet.",
+            "isActive": true
+          },
+          {
+            "text": "É formada por nós e pelas ligações entre eles.",
+            "isActive": true
+          }
+        ],
+        "prerequisites": [],
+        "trueFalseActivities": [
+          {
+            "statement": "Uma rede de computadores só funciona com cabos.",
+            "isCorrect": false,
+            "explanation": "Redes também usam enlaces sem fio, como o Wi-Fi.",
+            "isActive": true
+          },
+          {
+            "statement": "A internet é um exemplo de rede de computadores.",
+            "isCorrect": true,
+            "explanation": "A internet interliga milhões de redes no mundo todo.",
+            "isActive": true
+          },
+          {
+            "statement": "Dois computadores ligados para trocar arquivos já formam uma rede.",
+            "isCorrect": true,
+            "explanation": "Basta haver dispositivos interligados trocando dados.",
+            "isActive": true
+          }
+        ],
+        "fillBlankActivities": [
+          {
+            "text": "Uma rede é formada por {{1}} interligados que trocam {{2}}.",
+            "answers": [
+              {
+                "slotNumber": 1,
+                "correctText": "dispositivos"
+              },
+              {
+                "slotNumber": 2,
+                "correctText": "dados"
+              }
+            ],
+            "distractors": [
+              "senhas"
+            ],
+            "isActive": true
+          },
+          {
+            "text": "A rede de uma casa é uma rede {{1}}; a internet é uma rede {{2}}.",
+            "answers": [
+              {
+                "slotNumber": 1,
+                "correctText": "local"
+              },
+              {
+                "slotNumber": 2,
+                "correctText": "mundial"
+              }
+            ],
+            "distractors": [
+              "privada"
+            ],
+            "isActive": true
+          },
+          {
+            "text": "As ligações entre os dispositivos podem ser físicas ou {{1}}.",
+            "answers": [
+              {
+                "slotNumber": 1,
+                "correctText": "sem fio"
+              }
+            ],
+            "distractors": [
+              "manuais"
+            ],
+            "isActive": true
+          }
+        ],
+        "orderingActivities": [],
+        "crossword": {
+          "word": "Rede",
+          "clue": "Conjunto de dispositivos interligados que trocam dados"
+        }
+      },
+      {
+        "externalId": "protocolo",
+        "name": "Protocolo",
+        "definition": "Protocolo é um conjunto de regras que define o formato e a ordem das mensagens trocadas entre dispositivos de uma rede.",
+        "isActive": true,
+        "keywords": [
+          {
+            "value": "conjunto de regras",
+            "isActive": true
+          },
+          {
+            "value": "formato",
+            "isActive": true
+          },
+          {
+            "value": "ordem das mensagens",
+            "isActive": true
+          }
+        ],
+        "clues": [
+          {
+            "text": "Sem ele, dois dispositivos não se entenderiam.",
+            "isActive": true
+          },
+          {
+            "text": "Funciona como um idioma combinado entre as partes.",
+            "isActive": true
+          },
+          {
+            "text": "IP, TCP e HTTP são exemplos.",
+            "isActive": true
+          }
+        ],
+        "prerequisites": [
+          "rede"
+        ],
+        "trueFalseActivities": [
+          {
+            "statement": "Protocolos definem regras para a comunicação em rede.",
+            "isCorrect": true,
+            "explanation": "Eles combinam o formato e a ordem das mensagens.",
+            "isActive": true
+          },
+          {
+            "statement": "Cada fabricante precisa inventar os próprios protocolos para seus computadores conversarem.",
+            "isCorrect": false,
+            "explanation": "Protocolos são padrões públicos justamente para que equipamentos diferentes se entendam.",
+            "isActive": true
+          },
+          {
+            "statement": "HTTP é um protocolo.",
+            "isCorrect": true,
+            "explanation": "É o protocolo usado pela web.",
+            "isActive": true
+          }
+        ],
+        "fillBlankActivities": [
+          {
+            "text": "Um protocolo define o {{1}} e a {{2}} das mensagens.",
+            "answers": [
+              {
+                "slotNumber": 1,
+                "correctText": "formato"
+              },
+              {
+                "slotNumber": 2,
+                "correctText": "ordem"
+              }
+            ],
+            "distractors": [
+              "cor"
+            ],
+            "isActive": true
+          },
+          {
+            "text": "Protocolos funcionam como um {{1}} combinado entre os dispositivos.",
+            "answers": [
+              {
+                "slotNumber": 1,
+                "correctText": "idioma"
+              }
+            ],
+            "distractors": [
+              "cabo"
+            ],
+            "isActive": true
+          },
+          {
+            "text": "TCP, IP e HTTP são exemplos de {{1}}.",
+            "answers": [
+              {
+                "slotNumber": 1,
+                "correctText": "protocolos"
+              }
+            ],
+            "distractors": [
+              "roteadores"
+            ],
+            "isActive": true
+          }
+        ],
+        "orderingActivities": [
+          {
+            "instruction": "Ordene uma troca de mensagens seguindo um protocolo",
+            "items": [
+              "Um lado envia um pedido",
+              "O outro lado interpreta o pedido pelas regras",
+              "O outro lado envia a resposta"
+            ],
+            "isActive": true
+          }
+        ],
+        "crossword": {
+          "word": "Protocolo",
+          "clue": "Conjunto de regras para a troca de mensagens"
+        }
+      },
+      {
+        "externalId": "ip",
+        "name": "IP",
+        "definition": "O IP (Internet Protocol) é o protocolo de endereçamento lógico que identifica cada dispositivo e encaminha pacotes entre redes.",
+        "isActive": true,
+        "keywords": [
+          {
+            "value": "endereçamento lógico",
+            "isActive": true
+          },
+          {
+            "value": "pacotes",
+            "isActive": true
+          }
+        ],
+        "clues": [
+          {
+            "text": "Está relacionado à camada de rede.",
+            "isActive": true
+          },
+          {
+            "text": "Cada dispositivo conectado recebe um endereço dele.",
+            "isActive": true
+          },
+          {
+            "text": "Existe nas versões 4 e 6.",
+            "isActive": true
+          }
+        ],
+        "prerequisites": [
+          "protocolo"
+        ],
+        "trueFalseActivities": [
+          {
+            "statement": "O endereço IP identifica um dispositivo na rede.",
+            "isCorrect": true,
+            "explanation": "É o endereço lógico do dispositivo.",
+            "isActive": true
+          },
+          {
+            "statement": "O IP garante que todos os pacotes cheguem na ordem certa.",
+            "isCorrect": false,
+            "explanation": "Quem cuida da entrega confiável e da ordem é o TCP.",
+            "isActive": true
+          },
+          {
+            "statement": "Endereços IPv6 são maiores que endereços IPv4.",
+            "isCorrect": true,
+            "explanation": "O IPv6 usa 128 bits; o IPv4, 32 bits.",
+            "isActive": true
+          }
+        ],
+        "fillBlankActivities": [
+          {
+            "text": "O IP faz o endereçamento {{1}} dos dispositivos.",
+            "answers": [
+              {
+                "slotNumber": 1,
+                "correctText": "lógico"
+              }
+            ],
+            "distractors": [
+              "físico"
+            ],
+            "isActive": true
+          },
+          {
+            "text": "O IP divide os dados em {{1}} e os encaminha entre {{2}}.",
+            "answers": [
+              {
+                "slotNumber": 1,
+                "correctText": "pacotes"
+              },
+              {
+                "slotNumber": 2,
+                "correctText": "redes"
+              }
+            ],
+            "distractors": [
+              "arquivos"
+            ],
+            "isActive": true
+          },
+          {
+            "text": "Um endereço IPv4 tem {{1}} bits.",
+            "answers": [
+              {
+                "slotNumber": 1,
+                "correctText": "32"
+              }
+            ],
+            "distractors": [
+              "128"
+            ],
+            "isActive": true
+          }
+        ],
+        "orderingActivities": [],
+        "crossword": {
+          "word": "IP",
+          "clue": "Protocolo de endereçamento lógico da internet"
+        }
+      },
+      {
+        "externalId": "tcp",
+        "name": "TCP",
+        "definition": "O TCP é um protocolo de transporte orientado a conexão que garante a entrega confiável e ordenada dos dados.",
+        "isActive": true,
+        "keywords": [
+          {
+            "value": "orientado a conexão",
+            "isActive": true
+          },
+          {
+            "value": "entrega confiável",
+            "isActive": true
+          }
+        ],
+        "clues": [
+          {
+            "text": "Antes de enviar dados, combina uma conexão em três etapas.",
+            "isActive": true
+          },
+          {
+            "text": "Reenvia o que se perdeu no caminho.",
+            "isActive": true
+          },
+          {
+            "text": "É usado quando nenhum dado pode faltar, como em páginas web.",
+            "isActive": true
+          }
+        ],
+        "prerequisites": [
+          "ip"
+        ],
+        "trueFalseActivities": [
+          {
+            "statement": "O TCP reenvia dados perdidos.",
+            "isCorrect": true,
+            "explanation": "A retransmissão faz parte da entrega confiável.",
+            "isActive": true
+          },
+          {
+            "statement": "O TCP envia dados sem estabelecer conexão antes.",
+            "isCorrect": false,
+            "explanation": "Ele abre a conexão em três etapas (three-way handshake).",
+            "isActive": true
+          },
+          {
+            "statement": "O TCP entrega os dados na ordem em que foram enviados.",
+            "isCorrect": true,
+            "explanation": "Ele reordena os segmentos que chegam fora de ordem.",
+            "isActive": true
+          }
+        ],
+        "fillBlankActivities": [
+          {
+            "text": "O TCP é orientado a {{1}}.",
+            "answers": [
+              {
+                "slotNumber": 1,
+                "correctText": "conexão"
+              }
+            ],
+            "distractors": [
+              "eventos"
+            ],
+            "isActive": true
+          },
+          {
+            "text": "O TCP garante a entrega {{1}} e {{2}} dos dados.",
+            "answers": [
+              {
+                "slotNumber": 1,
+                "correctText": "confiável"
+              },
+              {
+                "slotNumber": 2,
+                "correctText": "ordenada"
+              }
+            ],
+            "distractors": [
+              "instantânea"
+            ],
+            "isActive": true
+          },
+          {
+            "text": "A abertura de conexão do TCP tem {{1}} etapas.",
+            "answers": [
+              {
+                "slotNumber": 1,
+                "correctText": "três"
+              }
+            ],
+            "distractors": [
+              "duas"
+            ],
+            "isActive": true
+          }
+        ],
+        "orderingActivities": [
+          {
+            "instruction": "Ordene as etapas da abertura de conexão do TCP",
+            "items": [
+              "SYN",
+              "SYN-ACK",
+              "ACK"
+            ],
+            "isActive": true
+          }
+        ],
+        "crossword": {
+          "word": "TCP",
+          "clue": "Transporte com entrega confiável e ordenada"
+        }
+      },
+      {
+        "externalId": "udp",
+        "name": "UDP",
+        "definition": "O UDP é um protocolo de transporte sem conexão, mais leve que o TCP, que envia datagramas sem garantir a entrega.",
+        "isActive": true,
+        "keywords": [
+          {
+            "value": "sem conexão",
+            "isActive": true
+          },
+          {
+            "value": "datagramas",
+            "isActive": true
+          }
+        ],
+        "clues": [
+          {
+            "text": "Troca garantia por velocidade.",
+            "isActive": true
+          },
+          {
+            "text": "É comum em jogos online e chamadas de vídeo.",
+            "isActive": true
+          },
+          {
+            "text": "Não reenvia o que se perdeu.",
+            "isActive": true
+          }
+        ],
+        "prerequisites": [
+          "ip"
+        ],
+        "trueFalseActivities": [
+          {
+            "statement": "O UDP garante a entrega de todos os datagramas.",
+            "isCorrect": false,
+            "explanation": "O UDP não confirma nem reenvia datagramas.",
+            "isActive": true
+          },
+          {
+            "statement": "O UDP é mais leve que o TCP.",
+            "isCorrect": true,
+            "explanation": "Ele não abre conexão nem controla a entrega.",
+            "isActive": true
+          },
+          {
+            "statement": "Chamadas de vídeo costumam usar UDP.",
+            "isCorrect": true,
+            "explanation": "Um pequeno atraso é pior do que perder um pedaço da imagem.",
+            "isActive": true
+          }
+        ],
+        "fillBlankActivities": [
+          {
+            "text": "O UDP é um protocolo de transporte {{1}} conexão.",
+            "answers": [
+              {
+                "slotNumber": 1,
+                "correctText": "sem"
+              }
+            ],
+            "distractors": [
+              "com"
+            ],
+            "isActive": true
+          },
+          {
+            "text": "O UDP envia {{1}} sem garantir a entrega.",
+            "answers": [
+              {
+                "slotNumber": 1,
+                "correctText": "datagramas"
+              }
+            ],
+            "distractors": [
+              "e-mails"
+            ],
+            "isActive": true
+          },
+          {
+            "text": "O UDP troca garantia de entrega por {{1}}.",
+            "answers": [
+              {
+                "slotNumber": 1,
+                "correctText": "velocidade"
+              }
+            ],
+            "distractors": [
+              "segurança"
+            ],
+            "isActive": true
+          }
+        ],
+        "orderingActivities": [],
+        "crossword": {
+          "word": "UDP",
+          "clue": "Transporte sem conexão, rápido e sem garantia de entrega"
+        }
+      },
+      {
+        "externalId": "dns",
+        "name": "DNS",
+        "definition": "O DNS é o sistema que traduz nomes de domínio, como exemplo.com, em endereços IP.",
+        "isActive": true,
+        "keywords": [
+          {
+            "value": "nomes de domínio",
+            "isActive": true
+          },
+          {
+            "value": "endereços IP",
+            "isActive": true
+          }
+        ],
+        "clues": [
+          {
+            "text": "Funciona como uma lista telefônica da internet.",
+            "isActive": true
+          },
+          {
+            "text": "É consultado antes de abrir quase qualquer site.",
+            "isActive": true
+          },
+          {
+            "text": "Suas consultas costumam viajar por UDP na porta 53.",
+            "isActive": true
+          }
+        ],
+        "prerequisites": [
+          "ip",
+          "udp"
+        ],
+        "trueFalseActivities": [
+          {
+            "statement": "O DNS traduz nomes de domínio em endereços IP.",
+            "isCorrect": true,
+            "explanation": "É essa a função dele.",
+            "isActive": true
+          },
+          {
+            "statement": "Sem DNS é impossível acessar um site, mesmo sabendo o endereço IP.",
+            "isCorrect": false,
+            "explanation": "Dá para acessar pelo endereço IP; o DNS só traduz o nome.",
+            "isActive": true
+          },
+          {
+            "statement": "A porta padrão do DNS é a 53.",
+            "isCorrect": true,
+            "explanation": "As consultas usam a porta 53.",
+            "isActive": true
+          }
+        ],
+        "fillBlankActivities": [
+          {
+            "text": "O DNS traduz {{1}} de domínio em endereços {{2}}.",
+            "answers": [
+              {
+                "slotNumber": 1,
+                "correctText": "nomes"
+              },
+              {
+                "slotNumber": 2,
+                "correctText": "IP"
+              }
+            ],
+            "distractors": [
+              "senhas"
+            ],
+            "isActive": true
+          },
+          {
+            "text": "O DNS funciona como uma {{1}} telefônica da internet.",
+            "answers": [
+              {
+                "slotNumber": 1,
+                "correctText": "lista"
+              }
+            ],
+            "distractors": [
+              "linha"
+            ],
+            "isActive": true
+          },
+          {
+            "text": "As consultas DNS usam normalmente a porta {{1}}.",
+            "answers": [
+              {
+                "slotNumber": 1,
+                "correctText": "53"
+              }
+            ],
+            "distractors": [
+              "80"
+            ],
+            "isActive": true
+          }
+        ],
+        "orderingActivities": [
+          {
+            "instruction": "Ordene o que acontece ao acessar um site pelo nome",
+            "items": [
+              "Digitar o nome do site",
+              "Consultar o DNS",
+              "Receber o endereço IP",
+              "Conectar ao servidor"
+            ],
+            "isActive": true
+          }
+        ],
+        "crossword": {
+          "word": "DNS",
+          "clue": "Traduz nomes de domínio em endereços"
+        }
+      },
+      {
+        "externalId": "http",
+        "name": "HTTP",
+        "definition": "O HTTP é o protocolo de aplicação usado na web para pedir e entregar páginas, seguindo o modelo de requisição e resposta.",
+        "isActive": true,
+        "keywords": [
+          {
+            "value": "protocolo de aplicação",
+            "isActive": true
+          },
+          {
+            "value": "requisição e resposta",
+            "isActive": true
+          }
+        ],
+        "clues": [
+          {
+            "text": "Seus métodos mais comuns são GET e POST.",
+            "isActive": true
+          },
+          {
+            "text": "Sua versão segura termina com a letra S.",
+            "isActive": true
+          },
+          {
+            "text": "Códigos como 200 e 404 vêm dele.",
+            "isActive": true
+          }
+        ],
+        "prerequisites": [
+          "tcp",
+          "dns"
+        ],
+        "trueFalseActivities": [
+          {
+            "statement": "O código 404 indica que o recurso não foi encontrado.",
+            "isCorrect": true,
+            "explanation": "404 significa \"não encontrado\".",
+            "isActive": true
+          },
+          {
+            "statement": "Nas versões 1.1 e 2, o HTTP usa UDP como transporte.",
+            "isCorrect": false,
+            "explanation": "Essas versões rodam sobre TCP.",
+            "isActive": true
+          },
+          {
+            "statement": "HTTPS é o HTTP com criptografia.",
+            "isCorrect": true,
+            "explanation": "O S indica a camada de segurança (TLS).",
+            "isActive": true
+          }
+        ],
+        "fillBlankActivities": [
+          {
+            "text": "O HTTP segue o modelo de {{1}} e {{2}}.",
+            "answers": [
+              {
+                "slotNumber": 1,
+                "correctText": "requisição"
+              },
+              {
+                "slotNumber": 2,
+                "correctText": "resposta"
+              }
+            ],
+            "distractors": [
+              "pergunta"
+            ],
+            "isActive": true
+          },
+          {
+            "text": "O método {{1}} pede um recurso ao servidor.",
+            "answers": [
+              {
+                "slotNumber": 1,
+                "correctText": "GET"
+              }
+            ],
+            "distractors": [
+              "SEND"
+            ],
+            "isActive": true
+          },
+          {
+            "text": "A versão segura do HTTP se chama {{1}}.",
+            "answers": [
+              {
+                "slotNumber": 1,
+                "correctText": "HTTPS"
+              }
+            ],
+            "distractors": [
+              "HTTP2"
+            ],
+            "isActive": true
+          }
+        ],
+        "orderingActivities": [],
+        "crossword": {
+          "word": "HTTP",
+          "clue": "Protocolo de aplicação da web"
+        }
+      },
+      {
+        "externalId": "roteador",
+        "name": "Roteador",
+        "definition": "O roteador é o equipamento que interliga redes diferentes e escolhe o caminho dos pacotes pela tabela de rotas.",
+        "isActive": true,
+        "keywords": [
+          {
+            "value": "interliga redes",
+            "isActive": true
+          },
+          {
+            "value": "tabela de rotas",
+            "isActive": true
+          }
+        ],
+        "clues": [
+          {
+            "text": "Em casa, costuma vir junto com o Wi-Fi.",
+            "isActive": true
+          },
+          {
+            "text": "Decide para onde cada pacote vai.",
+            "isActive": true
+          },
+          {
+            "text": "Trabalha com endereços IP.",
+            "isActive": true
+          }
+        ],
+        "prerequisites": [
+          "ip"
+        ],
+        "trueFalseActivities": [
+          {
+            "statement": "O roteador escolhe o caminho dos pacotes.",
+            "isCorrect": true,
+            "explanation": "Ele decide o próximo salto de cada pacote.",
+            "isActive": true
+          },
+          {
+            "statement": "O roteador só funciona dentro de uma mesma rede.",
+            "isCorrect": false,
+            "explanation": "A função dele é justamente interligar redes diferentes.",
+            "isActive": true
+          },
+          {
+            "statement": "O roteador consulta uma tabela de rotas.",
+            "isCorrect": true,
+            "explanation": "É nela que ele encontra o caminho de cada destino.",
+            "isActive": true
+          }
+        ],
+        "fillBlankActivities": [
+          {
+            "text": "O roteador {{1}} redes diferentes.",
+            "answers": [
+              {
+                "slotNumber": 1,
+                "correctText": "interliga"
+              }
+            ],
+            "distractors": [
+              "apaga"
+            ],
+            "isActive": true
+          },
+          {
+            "text": "Para decidir o caminho, o roteador consulta a {{1}} de rotas.",
+            "answers": [
+              {
+                "slotNumber": 1,
+                "correctText": "tabela"
+              }
+            ],
+            "distractors": [
+              "senha"
+            ],
+            "isActive": true
+          },
+          {
+            "text": "O roteador encaminha {{1}} usando endereços {{2}}.",
+            "answers": [
+              {
+                "slotNumber": 1,
+                "correctText": "pacotes"
+              },
+              {
+                "slotNumber": 2,
+                "correctText": "IP"
+              }
+            ],
+            "distractors": [
+              "e-mails"
+            ],
+            "isActive": true
+          }
+        ],
+        "orderingActivities": [],
+        "crossword": {
+          "word": "Roteador",
+          "clue": "Equipamento que interliga redes e escolhe caminhos"
+        }
+      }
+    ]
+  }
+}

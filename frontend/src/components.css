@@ -1,0 +1,85 @@
+/*
+ * Classes repeated across many pages (buttons, cards, form fields, banners). They live in the
+ * components layer, so any Tailwind utility placed next to them still wins.
+ */
+
+.btn {
+  min-height: 2.75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.55rem;
+  padding: 0.6rem 0.9rem;
+  color: var(--btn-cta-text);
+  background: var(--btn-cta-bg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  cursor: wait;
+}
+
+.btn-secondary {
+  border-color: var(--btn-secondary-border);
+  color: var(--btn-secondary-text);
+  background: var(--btn-secondary-bg);
+}
+
+.btn-primary {
+  border-color: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  background: var(--btn-primary-bg);
+}
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  background: var(--surface);
+  overflow-wrap: anywhere;
+}
+
+.field {
+  min-width: 0;
+  min-height: 2.75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.55rem;
+  padding: 0.55rem 0.7rem;
+  color: var(--text);
+  background: var(--surface-2);
+  font: inherit;
+}
+
+/* Container of the teacher pages. */
+.teacher-page {
+  width: min(100% - 2.5rem, 76rem);
+  margin: 0 auto;
+  padding: clamp(2rem, 5vw, 3.5rem) 0 4rem;
+  color: var(--text);
+}
+
+/* Success and error banners of the teacher pages. */
+.banner-success,
+.banner-error,
+.banner-warning {
+  padding: 0.75rem 1rem;
+  border: 1px solid;
+  border-radius: 0.65rem;
+}
+
+.banner-success {
+  border-color: var(--success-border);
+  color: var(--success-text);
+  background: var(--success-bg);
+}
+
+.banner-error {
+  border-color: var(--danger-border);
+  color: var(--danger-text);
+  background: var(--danger-bg);
+}
+
+.banner-warning {
+  border-color: var(--warning-border);
+  color: var(--warning-text);
+  background: var(--warning-bg);
+}

@@ -1,8 +1,9 @@
 using System.Data;
+using System.Data.Common;
+using System.Linq.Expressions;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
-using System.Data.Common;
 using StudyPlatform.Api.Data;
 using StudyPlatform.Api.Domain.Enums;
 using StudyPlatform.Api.DTOs.Learning;
@@ -16,7 +17,6 @@ public sealed class StudySessionService(
     ApplicationDbContext db,
     ActivitySelectionService selection,
     LearningProgressionService progression,
-    PerformanceRatingService performanceRatingService,
     TimeProvider timeProvider)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
@@ -24,7 +24,7 @@ public sealed class StudySessionService(
     public async Task<StartStudySessionResponse> StartAsync(Guid studentId, Guid moduleId, CancellationToken ct,
         StudySessionMode mode = StudySessionMode.Normal, Guid? selectedConceptId = null)
     {
-        await EnsureStudyAccessAsync(studentId, moduleId, ct);
+        await EnsureStudyAccessAndRecordLastAccessAsync(studentId, moduleId, ct);
         if (mode == StudySessionMode.FreePractice && selectedConceptId is not null &&
             !await db.Concepts.AnyAsync(concept => concept.Id == selectedConceptId && concept.ModuleId == moduleId && concept.IsActive, ct))
             throw NotFound();
@@ -42,7 +42,10 @@ public sealed class StudySessionService(
         if (existing is not null)
         {
             if (existing.Mode != mode) throw new ApiException(409, "active_session_mode_mismatch", "Conclua ou abandone a sessão atual antes de iniciar outro modo de estudo.");
-            var activity = await db.SessionActivityPresentations.Where(x => x.StudySessionId == existing.Id && x.AnsweredAtUtc == null).OrderByDescending(x => x.SequenceNumber).FirstOrDefaultAsync(ct);
+            var activity = await db.SessionActivityPresentations
+                .Where(x => x.StudySessionId == existing.Id && x.AnsweredAtUtc == null)
+                .OrderByDescending(x => x.SequenceNumber)
+                .FirstOrDefaultAsync(ct);
             if (activity is null)
             {
                 activity = await selection.PresentNextAsync(existing, ct);
@@ -109,8 +112,17 @@ public sealed class StudySessionService(
         var responseTime = Math.Max(0, (long)(now - presentation.StartedAtUtc).TotalMilliseconds);
         var wasCorrect = Correct(snapshot, presentation, request.Answer);
         var (attemptsUsed, hintsUsed) = GetEffort(snapshot, presentation, request);
-        var rating = session.Mode == StudySessionMode.FreePractice || snapshot.Type == "EXPOSURE"
-            ? (FsrsRating?)null : performanceRatingService.Infer(wasCorrect, attemptsUsed, hintsUsed, responseTime);
+
+        // Free practice never changes official progress. The session is locked and owned by the student and
+        // the presentation belongs to it, so the state can be updated in memory and saved once at the end.
+        StudentConceptState? state = null;
+        if (session.Mode == StudySessionMode.Normal)
+        {
+            var tracked = await progression.FindTrackedStateAsync(studentId, presentation.ConceptId, ct);
+            state = snapshot.Type == "EXPOSURE"
+                ? progression.ApplyExposureCompleted(tracked, now)
+                : progression.ApplyAnswer(tracked, session.Id, wasCorrect, attemptsUsed, hintsUsed, responseTime, now);
+        }
 
         var attempt = new ActivityAttempt
         {
@@ -128,24 +140,13 @@ public sealed class StudySessionService(
             ResponseTimeMs = responseTime,
             AttemptsUsed = attemptsUsed,
             HintsUsed = hintsUsed,
-            FsrsRating = rating,
+            FsrsRating = state?.LastFsrsRating,
             AnswerJson = request.Answer.GetRawText(),
-            ActivitySnapshotJson = JsonSerializer.Serialize(new { version = snapshot.Version, activity = snapshot, submittedAnswer = request.Answer }, JsonOptions),
             CreatedAtUtc = now,
         };
         db.ActivityAttempts.Add(attempt);
         presentation.AnsweredAtUtc = now;
-        if (session.Mode == StudySessionMode.Normal)
-        {
-            if (snapshot.Type == "EXPOSURE")
-                await progression.CompleteExposureAsync(studentId, presentation.ConceptId, ct);
-            else
-                await progression.RecordAnswerAsync(studentId, presentation.ConceptId, session.Id, wasCorrect, attemptsUsed, hintsUsed, responseTime, ct);
-        }
-
         session.CompletedActivities++;
-        var state = session.Mode == StudySessionMode.Normal ? await progression.GetStateAsync(studentId, presentation.ConceptId, ct) : null;
-        attempt.FsrsRating = state?.LastFsrsRating;
         SessionActivityPresentation? next = null;
         if (session.CompletedActivities >= 10)
             Complete(session, Now);
@@ -195,7 +196,7 @@ public sealed class StudySessionService(
         await db.StudentConceptStates.Where(state => state.StudentId == studentId && conceptIds.Contains(state.ConceptId)).ExecuteDeleteAsync(ct);
         await tx.CommitAsync(ct);
     }
-private async Task<SessionActivityPresentation?> GetOrCreateCurrentAsync(StudySession session, CancellationToken ct)
+    private async Task<SessionActivityPresentation?> GetOrCreateCurrentAsync(StudySession session, CancellationToken ct)
     {
         if (session.Status != StudySessionStatus.Active) return null;
         var current = await db.SessionActivityPresentations.Where(x => x.StudySessionId == session.Id && x.AnsweredAtUtc == null)
@@ -257,11 +258,27 @@ private async Task<SessionActivityPresentation?> GetOrCreateCurrentAsync(StudySe
 
     private async Task EnsureStudyAccessAsync(Guid studentId, Guid moduleId, CancellationToken ct)
     {
-        var allowed = await db.Students.AnyAsync(s => s.Id == studentId && s.IsActive && s.IsActivated
-            && s.Classroom.Status == ClassroomStatus.Active
-            && s.Classroom.ClassroomModules.Any(cm => cm.ModuleId == moduleId && !cm.Module.IsCommunityListing && cm.Module.Status == ModuleStatus.Published), ct);
-        if (!allowed) throw NotFound();
+        if (!await db.Students.AnyAsync(HasStudyAccess(studentId, moduleId), ct)) throw NotFound();
     }
+
+    // Starting a session is one of the moments the student's last access is recorded (with login and activation);
+    // the update doubles as the access check, so it costs a single query.
+    private async Task EnsureStudyAccessAndRecordLastAccessAsync(Guid studentId, Guid moduleId, CancellationToken ct)
+    {
+        var now = Now;
+        var updated = await db.Students.Where(HasStudyAccess(studentId, moduleId))
+            .ExecuteUpdateAsync(update => update.SetProperty(s => s.LastAccessAtUtc, (DateTime?)now), ct);
+        if (updated == 0) throw NotFound();
+    }
+
+    // Study requires an approved enrollment in an active classroom that has the module published.
+    private static Expression<Func<Student, bool>> HasStudyAccess(Guid studentId, Guid moduleId) =>
+        s => s.Id == studentId && s.IsActive
+            && s.Enrollments.Any(e => e.Status == EnrollmentStatus.Approved
+                && e.Classroom.Status == ClassroomStatus.Active
+                && e.Classroom.ClassroomModules.Any(cm => cm.ModuleId == moduleId
+                    && !cm.Module.IsCommunityListing
+                    && cm.Module.Status == ModuleStatus.Published));
 
     private static bool Correct(ActivitySnapshot s, SessionActivityPresentation p, JsonElement answer)
     {
@@ -371,7 +388,11 @@ private async Task<SessionActivityPresentation?> GetOrCreateCurrentAsync(StudySe
     }
 
     private DateTime Now => timeProvider.GetUtcNow().UtcDateTime;
-    private static void EnsureActive(StudySession session) { if (session.Status != StudySessionStatus.Active) throw new ApiException(409, "session_not_active", "A sessão não está ativa."); }
+    private static void EnsureActive(StudySession session)
+    {
+        if (session.Status != StudySessionStatus.Active)
+            throw new ApiException(409, "session_not_active", "A sessão não está ativa.");
+    }
     private static ApiException NotFound() => new(404, "study_session_not_found", "A sessão ou módulo não foi encontrado.");
     private static ApiException BadRequest(string code, string message) => new(400, code, message);
 }

@@ -1,0 +1,154 @@
+<main class="mx-auto w-[min(100%-2rem,52rem)] pt-4 pb-12 max-[480px]:w-[min(100%-1rem,52rem)]">
+  @if (loading()) {
+    <p role="status">Carregando sessão…</p>
+  } @else if (session(); as session) {
+    @switch (session.status) {
+      @case ('COMPLETED') {
+        <section class="card p-[clamp(1rem,4vw,2rem)]" aria-labelledby="complete-title">
+          <app-page-header
+            eyebrow="Sessão finalizada"
+            title="Sessão concluída"
+            titleId="complete-title"
+          />
+          <p>
+            {{ session.completedActivities }}
+            {{
+              session.completedActivities === 1 ? 'atividade realizada' : 'atividades realizadas'
+            }}.
+          </p>
+          @if (session.mode === 'FREE_PRACTICE') {
+            <p>A prática livre não alterou seu progresso oficial.</p>
+          } @else if (finalModule(); as module) {
+            <section aria-label="Resumo do progresso atualizado">
+              <p>Progresso: {{ module.progressPercent }}%</p>
+              <p>
+                {{ module.masteredConcepts }} conceitos dominados · {{ module.learningConcepts }} em
+                aprendizagem
+              </p>
+              <p>
+                Próxima revisão:
+                {{
+                  module.nextReviewAtUtc ? reviewLabel(module.nextReviewAtUtc) : 'nenhuma agendada'
+                }}
+              </p>
+            </section>
+          }
+          @if (notice()) {
+            <p class="text-success-text" role="status">{{ notice() }}</p>
+          }
+          <p>Quer continuar praticando?</p>
+          <div class="mt-5 flex flex-wrap gap-[0.875rem] max-[480px]:[&>button]:flex-[1_1_100%]">
+            <button
+              type="button"
+              class="btn btn-primary"
+              (click)="goTo(base + '/modules/' + session.moduleId)"
+            >
+              Voltar ao módulo
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="goTo(base + '/modules/' + session.moduleId + '?practice=free')"
+            >
+              Estudar livremente
+            </button>
+          </div>
+        </section>
+      }
+      @case ('ABANDONED') {
+        <section class="card p-[clamp(1rem,4vw,2rem)]">
+          <h1>Sessão abandonada</h1>
+          <p>Suas respostas anteriores continuam salvas.</p>
+          <button type="button" class="btn" (click)="goTo(base)">Voltar aos módulos</button>
+        </section>
+      }
+      @default {
+        <header class="mb-4 flex justify-between gap-3 max-[480px]:items-start">
+          <button type="button" class="btn" (click)="goTo(base)">← Módulos</button>
+          <div class="flex flex-wrap items-center gap-3">
+            <app-theme-toggle />
+            @if (auth.user()) {
+              <button type="button" class="btn" (click)="logout()">Sair</button>
+            }
+            <button type="button" class="btn" [disabled]="busy()" (click)="abandon()">
+              Abandonar sessão
+            </button>
+          </div>
+        </header>
+        <section class="card p-[clamp(1rem,4vw,2rem)]" aria-labelledby="session-title">
+          <app-page-header
+            eyebrow="Atividade atual"
+            title="Sessão de estudo"
+            titleId="session-title"
+          >
+            @if (session.activity; as activity) {
+              <app-session-timer [startedAtUtc]="activity.startedAtUtc" />
+            }
+          </app-page-header>
+          <p class="text-text tabular-nums" aria-live="polite">{{ progressText(session) }}</p>
+          @if (notice()) {
+            <p class="text-success-text" role="status">{{ notice() }}</p>
+          }
+          @if (error()) {
+            <p class="text-danger-text" role="alert">{{ error() }}</p>
+          }
+          @if (feedback(); as feedback) {
+            <section
+              class="mt-5 rounded-[0.7rem] border p-4"
+              [class]="
+                feedback.response.wasCorrect
+                  ? 'border-success-border bg-success text-success-text'
+                  : 'border-danger-border bg-danger text-danger-text'
+              "
+              aria-live="polite"
+              aria-labelledby="feedback-title"
+            >
+              <h2 id="feedback-title" class="mt-0">
+                {{ feedback.response.wasCorrect ? 'Correto' : 'Incorreto' }}
+              </h2>
+              <p>{{ feedback.response.feedback }}</p>
+              @if (feedback.expected || feedback.explanation) {
+                <div>
+                  <h3>Resposta esperada</h3>
+                  @if (feedback.expected) {
+                    <p>{{ feedback.expected }}</p>
+                  }
+                  @if (feedback.explanation) {
+                    <p>{{ feedback.explanation }}</p>
+                  }
+                </div>
+              }
+              <button
+                type="button"
+                class="btn"
+                [disabled]="busy()"
+                (click)="continueAfterFeedback()"
+              >
+                {{ feedback.response.sessionStatus === 'COMPLETED' ? 'Ver resumo' : 'Continuar' }}
+              </button>
+            </section>
+          } @else if (session.activity) {
+            <!-- One iteration per presentation: each new activity gets a fresh minigame. -->
+            @for (activity of [session.activity]; track activity.presentationId) {
+              <app-activity-game
+                [activity]="activity"
+                [busy]="busy()"
+                (reveal)="reveal()"
+                (answered)="submit($event)"
+              />
+            }
+          } @else {
+            <app-empty-state>
+              <h2>Nenhuma atividade elegível</h2>
+              <p>Esta sessão terminou sem atividades disponíveis.</p>
+              <button type="button" class="btn" (click)="goTo(base)">Voltar aos módulos</button>
+            </app-empty-state>
+          }
+        </section>
+      }
+    }
+  } @else if (error()) {
+    <p role="alert">{{ error() }}</p>
+    <button type="button" class="btn" (click)="goTo(base)">Voltar aos módulos</button>
+  }
+</main>

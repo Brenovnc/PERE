@@ -12,7 +12,8 @@ public sealed class TeacherProgressService(ApplicationDbContext db, TimeProvider
     {
         var modules = await db.Modules.AsNoTracking().CountAsync(module => module.TeacherId == teacherId && !module.IsCommunityListing && module.Status != ModuleStatus.Archived, ct);
         var activeClassrooms = await db.Classrooms.AsNoTracking().CountAsync(classroom => classroom.TeacherId == teacherId && classroom.Status == ClassroomStatus.Active, ct);
-        var activeStudents = await db.Students.AsNoTracking().CountAsync(student => student.IsActive && student.Classroom.TeacherId == teacherId, ct);
+        var activeStudents = await db.Students.AsNoTracking().CountAsync(student => student.IsActive
+            && student.Enrollments.Any(e => e.Status == EnrollmentStatus.Approved && e.Classroom.TeacherId == teacherId), ct);
         return new(modules, activeClassrooms, activeStudents);
     }
 
@@ -21,9 +22,10 @@ public sealed class TeacherProgressService(ApplicationDbContext db, TimeProvider
         var classroom = await db.Classrooms.AsNoTracking().Where(item => item.Id == classroomId && item.TeacherId == teacherId)
             .Select(item => new { item.Id, item.Name }).SingleOrDefaultAsync(ct)
             ?? throw NotFound("A turma não foi encontrada.");
-        var students = await db.Students.AsNoTracking().Where(student => student.ClassroomId == classroomId)
-            .OrderBy(student => student.EnrollmentNumber)
-            .Select(student => new StudentRow(student.Id, student.EnrollmentNumber, student.Name, student.IsActive, student.LastAccessAtUtc)).ToListAsync(ct);
+        var students = await ApprovedStudents(classroomId)
+            .OrderBy(student => student.Name)
+            .Select(student => new StudentRow(student.Id, student.Name, student.Email, student.IsActive, student.LastAccessAtUtc))
+            .ToListAsync(ct);
         var conceptRows = await db.Concepts.AsNoTracking()
             .Where(concept => concept.IsActive && !concept.Module.IsCommunityListing && concept.Module.Status == ModuleStatus.Published &&
                 db.ClassroomModules.Any(link => link.ClassroomId == classroomId && link.ModuleId == concept.ModuleId))
@@ -38,7 +40,7 @@ public sealed class TeacherProgressService(ApplicationDbContext db, TimeProvider
             totals.TryGetValue(student.Id, out var total);
             var mastered = total?.Mastered ?? 0;
             var learning = total?.Learning ?? 0;
-            return new ClassroomStudentProgressResponse(student.Id, student.EnrollmentNumber, student.Name, student.IsActive,
+            return new ClassroomStudentProgressResponse(student.Id, student.Name, student.Email, student.IsActive,
                 mastered, learning, totalConcepts - mastered - learning, total?.PendingReviews ?? 0, Percent(mastered, totalConcepts), student.LastAccessAtUtc);
         }).ToArray();
         return new(classroom.Id, classroom.Name, totalConcepts, rows);
@@ -46,9 +48,10 @@ public sealed class TeacherProgressService(ApplicationDbContext db, TimeProvider
 
     public async Task<StudentProgressResponse> GetStudentProgressAsync(Guid teacherId, Guid classroomId, Guid studentId, CancellationToken ct)
     {
-        var student = await db.Students.AsNoTracking()
-            .Where(item => item.Id == studentId && item.ClassroomId == classroomId && item.Classroom.TeacherId == teacherId)
-            .Select(item => new StudentRow(item.Id, item.EnrollmentNumber, item.Name, item.IsActive, item.LastAccessAtUtc)).SingleOrDefaultAsync(ct)
+        var student = await ApprovedStudents(classroomId)
+            .Where(item => item.Id == studentId && item.Enrollments.Any(e => e.ClassroomId == classroomId && e.Classroom.TeacherId == teacherId))
+            .Select(item => new StudentRow(item.Id, item.Name, item.Email, item.IsActive, item.LastAccessAtUtc))
+            .SingleOrDefaultAsync(ct)
             ?? throw NotFound("O aluno não foi encontrado nesta turma.");
         var modules = await db.ClassroomModules.AsNoTracking()
             .Where(link => link.ClassroomId == classroomId && !link.Module.IsCommunityListing && link.Module.Status == ModuleStatus.Published)
@@ -73,7 +76,7 @@ public sealed class TeacherProgressService(ApplicationDbContext db, TimeProvider
             return new StudentModuleProgressResponse(module.ModuleId, module.Title, module.Subject, moduleConcepts.Length,
                 mastered, learning, moduleConcepts.Length - mastered - learning, pending, Percent(mastered, moduleConcepts.Length));
         }).ToArray();
-        return new(student.Id, student.EnrollmentNumber, student.Name, student.IsActive, moduleProgress);
+        return new(student.Id, student.Name, student.Email, student.IsActive, moduleProgress);
     }
 
     private async Task<Dictionary<Guid, StateTotals>> GetStateTotalsAsync(Guid[] studentIds, Guid[] conceptIds, CancellationToken ct)
@@ -94,7 +97,10 @@ public sealed class TeacherProgressService(ApplicationDbContext db, TimeProvider
     private static bool IsLearning(LearningState state) => state is LearningState.Exposure or LearningState.Recognition or LearningState.GuidedRecall or LearningState.FreeRecall;
     private static int Percent(int mastered, int activeConcepts) => activeConcepts == 0 ? 0 : (int)Math.Round((double)mastered * 100 / activeConcepts, MidpointRounding.AwayFromZero);
     private static ApiException NotFound(string message) => new(404, "classroom_or_student_not_found", message);
-    private sealed record StudentRow(Guid Id, string EnrollmentNumber, string? Name, bool IsActive, DateTime? LastAccessAtUtc);
+    private IQueryable<Models.Student> ApprovedStudents(Guid classroomId) =>
+        db.Students.AsNoTracking().Where(student => student.Enrollments.Any(e => e.ClassroomId == classroomId && e.Status == EnrollmentStatus.Approved));
+
+    private sealed record StudentRow(Guid Id, string Name, string Email, bool IsActive, DateTime? LastAccessAtUtc);
     private sealed record ModuleRow(Guid ModuleId, string Title, string Subject);
     private sealed record ConceptRow(Guid ConceptId, Guid ModuleId, string ModuleTitle, string Subject);
     private sealed record StateTotals(Guid StudentId, int Mastered, int Learning, int PendingReviews);

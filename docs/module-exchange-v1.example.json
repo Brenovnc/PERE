@@ -8,7 +8,6 @@
     "version": 1,
     "crosswordEnabled": false,
     "crosswordAllowAllWords": false,
-    "allowAdvanceReview": false,
     "concepts": [
       {
         "externalId": "ip",

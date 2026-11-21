@@ -1,0 +1,92 @@
+<div class="min-h-screen bg-bg text-text">
+  <header
+    class="sticky top-0 z-10 grid min-h-20 grid-cols-[minmax(0,1fr)_auto] items-center gap-[0.7rem] border-b border-border bg-[color-mix(in_srgb,var(--bg)_76%,transparent)] px-4 pt-[0.7rem] backdrop-blur-md min-[761px]:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] min-[761px]:gap-6 min-[761px]:px-[clamp(1rem,4vw,3.5rem)] min-[761px]:py-3"
+  >
+    <a
+      routerLink="/teacher/home"
+      aria-label="PERE, página inicial"
+      class="col-start-1 row-start-1 flex max-w-full min-w-0 items-center gap-[0.7rem] justify-self-start whitespace-nowrap text-left text-text no-underline focus-visible:outline-offset-[3px]"
+    >
+      <app-pere-logo />
+      <span class="block min-w-0 overflow-hidden">
+        <strong class="block text-[0.9rem] font-bold text-heading min-[761px]:text-[0.96rem]"
+          >Área do Professor</strong
+        >
+        <small
+          class="mt-[0.12rem] block max-w-[min(42vw,17rem)] truncate text-[0.72rem] text-muted min-[761px]:max-w-none"
+        >
+          <b class="font-bold">PERE</b><span aria-hidden="true"> · </span>Sistema de Recuperação
+          Ativa
+        </small>
+      </span>
+    </a>
+
+    <nav
+      aria-label="Navegação principal"
+      class="col-span-full row-start-2 flex w-full items-center justify-start gap-[0.15rem] overflow-x-auto rounded-full border border-border bg-[color-mix(in_srgb,var(--surface-1)_88%,transparent)] p-1 pb-[0.65rem] [scrollbar-width:thin] min-[761px]:col-[2] min-[761px]:row-start-1 min-[761px]:w-auto min-[761px]:justify-center min-[761px]:gap-1 min-[761px]:overflow-visible min-[761px]:pb-1"
+    >
+      @for (link of links; track link.path) {
+        <a
+          [routerLink]="link.path"
+          routerLinkActive="active"
+          ariaCurrentWhenActive="page"
+          class="inline-flex min-h-[2.6rem] shrink-0 items-center rounded-full border border-transparent px-[0.65rem] py-2 text-secondary-text no-underline hover:bg-surface-2 hover:text-text focus-visible:outline-offset-[3px] min-[761px]:min-h-[2.7rem] min-[761px]:px-[0.85rem] min-[761px]:py-[0.55rem] [&.active]:border-nav-active-border [&.active]:bg-nav-active [&.active]:text-nav-active-text"
+        >
+          {{ link.label }}
+        </a>
+      }
+    </nav>
+
+    <div
+      class="col-start-2 row-start-1 flex min-w-0 items-center gap-[0.65rem] justify-self-end min-[761px]:col-start-3"
+    >
+      <app-theme-toggle />
+      <div #userMenu class="relative min-w-0">
+        <button
+          #menuTrigger
+          type="button"
+          aria-haspopup="menu"
+          [attr.aria-expanded]="menuOpen()"
+          class="flex max-w-full min-w-0 cursor-pointer items-center gap-[0.6rem] rounded-xl border border-transparent bg-transparent px-[0.45rem] py-1 text-[0.88rem] text-text hover:border-border hover:bg-surface-2 focus-visible:outline-offset-[3px] aria-expanded:border-border aria-expanded:bg-surface-2"
+          (click)="toggleMenu()"
+        >
+          <span
+            aria-hidden="true"
+            class="grid size-[2.2rem] shrink-0 place-items-center rounded-full bg-surface-3 font-bold text-text"
+          >
+            {{ initial() }}
+          </span>
+          <span class="hidden min-w-0 truncate min-[761px]:inline">{{ displayName() }}</span>
+          <span aria-hidden="true">⌄</span>
+        </button>
+        @if (menuOpen()) {
+          <div
+            role="menu"
+            class="absolute top-[calc(100%+0.5rem)] right-0 min-w-44 rounded-xl border border-border bg-surface-2 p-[0.35rem] shadow-[0_1rem_2rem_var(--shadow)]"
+          >
+            <a
+              role="menuitem"
+              routerLink="/teacher/account"
+              class="block w-full rounded-[0.45rem] px-3 py-[0.7rem] text-left text-text no-underline hover:bg-surface-2"
+              (click)="menuOpen.set(false)"
+            >
+              Meu perfil
+            </a>
+            <button
+              role="menuitem"
+              type="button"
+              class="block w-full cursor-pointer rounded-[0.45rem] border-0 bg-transparent px-3 py-[0.7rem] text-left text-text hover:bg-surface-2"
+              (click)="logout()"
+            >
+              Sair
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  </header>
+
+  <div class="min-w-0">
+    <router-outlet />
+  </div>
+</div>

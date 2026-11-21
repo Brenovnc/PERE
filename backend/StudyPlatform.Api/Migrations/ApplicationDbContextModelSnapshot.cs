@@ -38,7 +38,7 @@ namespace StudyPlatform.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("DataProtectionKeys");
+                    b.ToTable("DataProtectionKeys", (string)null);
                 });
 
             modelBuilder.Entity("StudyPlatform.Api.Models.Activities.ActivityAttempt", b =>
@@ -46,10 +46,6 @@ namespace StudyPlatform.Api.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
-
-                    b.Property<string>("ActivitySnapshotJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
 
                     b.Property<string>("ActivityType")
                         .IsRequired()
@@ -117,6 +113,8 @@ namespace StudyPlatform.Api.Migrations
                         .IsUnique();
 
                     b.HasIndex("RecognitionActivityId");
+
+                    b.HasIndex("StudentId", "AnsweredAtUtc");
 
                     b.HasIndex("StudySessionId", "CreatedAtUtc");
 
@@ -501,16 +499,37 @@ namespace StudyPlatform.Api.Migrations
                         });
                 });
 
+            modelBuilder.Entity("StudyPlatform.Api.Models.Enrollment", b =>
+                {
+                    b.Property<Guid>("StudentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ClassroomId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DecidedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("RequestedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.HasKey("StudentId", "ClassroomId");
+
+                    b.HasIndex("ClassroomId", "Status");
+
+                    b.ToTable("Enrollments", (string)null);
+                });
+
             modelBuilder.Entity("StudyPlatform.Api.Models.Module", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
-
-                    b.Property<bool>("AllowAdvanceReview")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
 
                     b.Property<int>("CommunityDownloadCount")
                         .HasColumnType("integer");
@@ -642,19 +661,19 @@ namespace StudyPlatform.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ClassroomId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("EnrollmentNumber")
+                    b.Property<string>("Email")
                         .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)");
 
-                    b.Property<bool>("IsActivated")
-                        .HasColumnType("boolean");
+                    b.Property<string>("EmailNormalized")
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("text")
+                        .HasComputedColumnSql("lower(\"Email\")", true);
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
@@ -663,19 +682,12 @@ namespace StudyPlatform.Api.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");
 
                     b.Property<string>("PasswordHash")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("TemporaryAccessCodeExpiresAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("TemporaryAccessCodeFailedAttempts")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("TemporaryAccessCodeHash")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("UpdatedAtUtc")
@@ -683,13 +695,10 @@ namespace StudyPlatform.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ClassroomId", "EnrollmentNumber")
+                    b.HasIndex("EmailNormalized")
                         .IsUnique();
 
-                    b.ToTable("Students", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_Students_TemporaryAccessCodeFailedAttempts_NonNegative", "\"TemporaryAccessCodeFailedAttempts\" >= 0");
-                        });
+                    b.ToTable("Students", (string)null);
                 });
 
             modelBuilder.Entity("StudyPlatform.Api.Models.StudentConceptState", b =>
@@ -872,28 +881,6 @@ namespace StudyPlatform.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("Teachers", (string)null);
-                });
-
-            modelBuilder.Entity("StudyPlatform.Api.Models.TeacherPhoto", b =>
-                {
-                    b.Property<Guid>("TeacherId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ContentType")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
-
-                    b.Property<byte[]>("Data")
-                        .IsRequired()
-                        .HasColumnType("bytea");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("TeacherId");
-
-                    b.ToTable("TeacherPhotos", (string)null);
                 });
 
             modelBuilder.Entity("StudyPlatform.Api.Models.Activities.ActivityAttempt", b =>
@@ -1101,6 +1088,25 @@ namespace StudyPlatform.Api.Migrations
                     b.Navigation("PrerequisiteConcept");
                 });
 
+            modelBuilder.Entity("StudyPlatform.Api.Models.Enrollment", b =>
+                {
+                    b.HasOne("StudyPlatform.Api.Models.Classroom", "Classroom")
+                        .WithMany("Enrollments")
+                        .HasForeignKey("ClassroomId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("StudyPlatform.Api.Models.Student", "Student")
+                        .WithMany("Enrollments")
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Classroom");
+
+                    b.Navigation("Student");
+                });
+
             modelBuilder.Entity("StudyPlatform.Api.Models.Module", b =>
                 {
                     b.HasOne("StudyPlatform.Api.Models.Teacher", "Teacher")
@@ -1129,17 +1135,6 @@ namespace StudyPlatform.Api.Migrations
                     b.Navigation("Concept");
 
                     b.Navigation("StudySession");
-                });
-
-            modelBuilder.Entity("StudyPlatform.Api.Models.Student", b =>
-                {
-                    b.HasOne("StudyPlatform.Api.Models.Classroom", "Classroom")
-                        .WithMany("Students")
-                        .HasForeignKey("ClassroomId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Classroom");
                 });
 
             modelBuilder.Entity("StudyPlatform.Api.Models.StudentConceptState", b =>
@@ -1187,17 +1182,6 @@ namespace StudyPlatform.Api.Migrations
                     b.Navigation("Student");
                 });
 
-            modelBuilder.Entity("StudyPlatform.Api.Models.TeacherPhoto", b =>
-                {
-                    b.HasOne("StudyPlatform.Api.Models.Teacher", "Teacher")
-                        .WithOne("Photo")
-                        .HasForeignKey("StudyPlatform.Api.Models.TeacherPhoto", "TeacherId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Teacher");
-                });
-
             modelBuilder.Entity("StudyPlatform.Api.Models.Activities.FillBlankActivity", b =>
                 {
                     b.Navigation("Answers");
@@ -1223,7 +1207,7 @@ namespace StudyPlatform.Api.Migrations
                 {
                     b.Navigation("ClassroomModules");
 
-                    b.Navigation("Students");
+                    b.Navigation("Enrollments");
                 });
 
             modelBuilder.Entity("StudyPlatform.Api.Models.Concept", b =>
@@ -1267,6 +1251,8 @@ namespace StudyPlatform.Api.Migrations
 
                     b.Navigation("ConceptStates");
 
+                    b.Navigation("Enrollments");
+
                     b.Navigation("StudySessions");
                 });
 
@@ -1284,8 +1270,6 @@ namespace StudyPlatform.Api.Migrations
                     b.Navigation("Classrooms");
 
                     b.Navigation("Modules");
-
-                    b.Navigation("Photo");
                 });
 #pragma warning restore 612, 618
         }

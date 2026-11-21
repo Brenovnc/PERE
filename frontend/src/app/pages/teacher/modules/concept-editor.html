@@ -1,0 +1,248 @@
+@let draft = value();
+<section class="panel">
+  <div class="title-row">
+    <h2>{{ draft.id ? 'Editar conceito' : 'Novo conceito' }}</h2>
+    @if (draft.id) {
+      <div class="actions">
+        <button type="button" class="secondary" [disabled]="busy()" (click)="duplicate.emit()">
+          Duplicar
+        </button>
+        <button type="button" class="danger" [disabled]="busy()" (click)="deactivate.emit()">
+          Desativar
+        </button>
+      </div>
+    }
+  </div>
+
+  <form class="concept-form" (submit)="submit($event)">
+    <details class="editor-section" open>
+      <summary>Informações básicas</summary>
+      <label
+        >Nome<input
+          #name
+          required
+          maxlength="160"
+          [value]="draft.name"
+          (input)="patch({ name: name.value })"
+      /></label>
+      <label
+        >Definição<textarea
+          #definition
+          required
+          maxlength="12000"
+          rows="4"
+          [value]="draft.definition"
+          (input)="patch({ definition: definition.value })"
+        ></textarea>
+      </label>
+    </details>
+
+    <details class="editor-section">
+      <summary>Keywords — {{ keywordCount() }}</summary>
+      <label
+        >Keywords <small>Uma por linha</small
+        ><textarea
+          #keywords
+          rows="3"
+          [value]="draft.keywords"
+          (input)="patch({ keywords: keywords.value })"
+        ></textarea>
+      </label>
+    </details>
+
+    <details class="editor-section">
+      <summary>Pistas — {{ clueCount() }}/3 {{ completeness(clueCount()) }}</summary>
+      <label
+        >Pistas na ordem desejada <small>Uma por linha; são necessárias 3 para publicar</small
+        ><textarea
+          #clues
+          rows="4"
+          [value]="draft.clues"
+          (input)="patch({ clues: clues.value })"
+        ></textarea>
+      </label>
+    </details>
+
+    <details class="editor-section">
+      <summary>Pré-requisitos — {{ draft.prerequisiteIds.length }}</summary>
+      @for (concept of otherConcepts(); track concept.id) {
+        <label class="check"
+          ><input
+            #prerequisite
+            type="checkbox"
+            [checked]="draft.prerequisiteIds.includes(concept.id)"
+            (change)="togglePrerequisite(concept.id, prerequisite.checked)"
+          />{{ concept.name }}</label
+        >
+      } @empty {
+        <app-empty-state>Nenhum outro conceito disponível.</app-empty-state>
+      }
+    </details>
+
+    <details class="editor-section">
+      <summary>
+        Verdadeiro/Falso — {{ draft.recognitionActivities.length }}/3
+        {{ completeness(draft.recognitionActivities.length) }}
+      </summary>
+      @for (activity of draft.recognitionActivities; track $index; let index = $index) {
+        <div class="activity">
+          <label
+            >Afirmação<input
+              #statement
+              required
+              [value]="activity.statement"
+              (input)="patchItem('recognitionActivities', index, { statement: statement.value })"
+          /></label>
+          <label
+            >Explicação<input
+              #explanation
+              required
+              [value]="activity.explanation"
+              (input)="
+                patchItem('recognitionActivities', index, { explanation: explanation.value })
+              "
+          /></label>
+          <label class="check"
+            ><input
+              #isCorrect
+              type="checkbox"
+              [checked]="activity.isCorrect"
+              (change)="patchItem('recognitionActivities', index, { isCorrect: isCorrect.checked })"
+            />A afirmação é verdadeira</label
+          >
+          <button
+            type="button"
+            class="text-button"
+            (click)="removeItem('recognitionActivities', index)"
+          >
+            Remover atividade
+          </button>
+        </div>
+      }
+      <button type="button" class="secondary" (click)="addTrueFalse()">
+        + Atividade verdadeiro/falso
+      </button>
+    </details>
+
+    <details class="editor-section">
+      <summary>
+        Completar lacunas — {{ draft.fillBlankActivities.length }}/3
+        {{ completeness(draft.fillBlankActivities.length) }}
+      </summary>
+      <p class="muted">
+        Marque os slots no texto como &#123;&#123;1&#125;&#125; e informe respostas como
+        <code>1:DNS</code>, uma por linha.
+      </p>
+      @for (activity of draft.fillBlankActivities; track $index; let index = $index) {
+        <div class="activity">
+          <label
+            >Texto com slots<textarea
+              #text
+              required
+              rows="2"
+              [value]="activity.text"
+              (input)="patchItem('fillBlankActivities', index, { text: text.value })"
+            ></textarea>
+          </label>
+          <label
+            >Respostas corretas<textarea
+              #answers
+              required
+              rows="2"
+              [value]="activity.answers"
+              (input)="patchItem('fillBlankActivities', index, { answers: answers.value })"
+            ></textarea>
+          </label>
+          <label
+            >Distratores <small>Uma opção por linha</small
+            ><textarea
+              #distractors
+              rows="2"
+              [value]="activity.distractors"
+              (input)="patchItem('fillBlankActivities', index, { distractors: distractors.value })"
+            ></textarea>
+          </label>
+          <button
+            type="button"
+            class="text-button"
+            (click)="removeItem('fillBlankActivities', index)"
+          >
+            Remover atividade
+          </button>
+        </div>
+      }
+      <button type="button" class="secondary" (click)="addFillBlank()">
+        + Atividade de lacunas
+      </button>
+    </details>
+
+    <details class="editor-section">
+      <summary>Ordenação — opcional</summary>
+      @for (activity of draft.orderingActivities; track $index; let index = $index) {
+        <div class="activity">
+          <label
+            >Instrução<input
+              #instruction
+              required
+              [value]="activity.instruction"
+              (input)="patchItem('orderingActivities', index, { instruction: instruction.value })"
+          /></label>
+          <label
+            >Itens na ordem correta <small>Um por linha</small
+            ><textarea
+              #items
+              required
+              rows="3"
+              [value]="activity.items"
+              (input)="patchItem('orderingActivities', index, { items: items.value })"
+            ></textarea>
+          </label>
+          <button
+            type="button"
+            class="text-button"
+            (click)="removeItem('orderingActivities', index)"
+          >
+            Remover atividade
+          </button>
+        </div>
+      }
+      <button type="button" class="secondary" (click)="addOrdering()">
+        + Atividade de ordenação
+      </button>
+    </details>
+
+    <details class="editor-section">
+      <summary>
+        <span>Cruzadinha</span
+        ><span>{{
+          draft.crosswordWord.trim() && draft.crosswordClue.trim() ? '✓ preenchida' : 'opcional'
+        }}</span>
+      </summary>
+      <label
+        >Conceito (resposta)<small>A palavra que o aluno deve preencher</small
+        ><input
+          #crosswordWord
+          maxlength="80"
+          [value]="draft.crosswordWord"
+          (input)="patch({ crosswordWord: crosswordWord.value })"
+      /></label>
+      <label
+        >Definição<small>Descreva o item sem citar o nome dele</small
+        ><textarea
+          #crosswordClue
+          maxlength="1000"
+          rows="3"
+          [value]="draft.crosswordClue"
+          (input)="patch({ crosswordClue: crosswordClue.value })"
+        ></textarea>
+      </label>
+    </details>
+
+    <div class="form-actions">
+      <button type="submit" [disabled]="busy()">
+        {{ draft.id ? 'Salvar conceito' : 'Adicionar conceito' }}
+      </button>
+      <button type="button" class="secondary" (click)="clear()">Limpar formulário</button>
+    </div>
+  </form>
+</section>

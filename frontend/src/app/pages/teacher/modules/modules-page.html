@@ -1,0 +1,178 @@
+<main class="teacher-page">
+  <app-page-header eyebrow="Biblioteca pedagógica" title="Gestão de módulos" />
+  @if (error()) {
+    <p role="alert" class="banner-error">{{ error() }}</p>
+  } @else if (notice()) {
+    <p role="status" class="banner-success">{{ notice() }}</p>
+  }
+  @if (busy()) {
+    <p class="muted" role="status">Salvando…</p>
+  }
+
+  @if (selected(); as module) {
+    <button type="button" class="back" (click)="back()">
+      ← {{ fromCommunity() ? 'Comunidade' : 'Meus módulos' }}
+    </button>
+
+    <section class="panel">
+      @if (module.isCommunityListing) {
+        <p role="status">
+          Você está editando um módulo da comunidade. As alterações valem para novos downloads; quem
+          já baixou não é afetado.
+        </p>
+      }
+      @if (module.communityOriginAuthor) {
+        <p class="muted">Baseado em módulo de {{ module.communityOriginAuthor }}</p>
+      }
+      <div class="title-row">
+        <div>
+          <p class="eyebrow">{{ statusLabels[module.status] }}</p>
+          <h2>{{ module.title }}</h2>
+        </div>
+        <div class="actions">
+          <button
+            type="button"
+            class="secondary"
+            [disabled]="busy()"
+            (click)="exportModule(module.id)"
+          >
+            Exportar JSON
+          </button>
+          <button type="button" class="secondary" [disabled]="busy()" (click)="duplicateModule()">
+            Duplicar módulo
+          </button>
+          @if (!module.isCommunityListing && !isArchived()) {
+            <button type="button" class="danger" [disabled]="busy()" (click)="archive()">
+              Arquivar
+            </button>
+          }
+        </div>
+      </div>
+      <form class="form-grid" (submit)="saveModule($event)">
+        <app-module-fields [(value)]="moduleDraft" />
+        <button type="submit" [disabled]="busy()">Salvar módulo</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="title-row">
+        <div>
+          <h2>Validação de publicação</h2>
+          <p class="muted">{{ activeConcepts().length }} conceitos ativos</p>
+        </div>
+        @if (!module.isCommunityListing) {
+          <button
+            type="button"
+            [disabled]="busy() || !validation()?.isValid || isArchived()"
+            (click)="publish()"
+          >
+            Publicar módulo
+          </button>
+        }
+      </div>
+      @if (validation(); as validation) {
+        @if (validation.isValid) {
+          <p class="banner-success">✓ Conteúdo válido para publicação. Ordenação é opcional.</p>
+        } @else {
+          <ul class="issues">
+            @for (issue of validation.errors; track $index) {
+              <li>
+                <strong>{{ issueConcept(issue.conceptId) }}:</strong> {{ issue.message }}
+              </li>
+            }
+          </ul>
+        }
+      }
+    </section>
+
+    <div class="editor-columns">
+      <section class="panel">
+        <div class="title-row">
+          <h2>Conceitos</h2>
+          <button type="button" class="secondary" (click)="newConcept()">+ Novo conceito</button>
+        </div>
+        @if (module.concepts.length === 0) {
+          <p class="muted">Adicione conceitos para compor o módulo.</p>
+        } @else {
+          <ul class="concept-list">
+            @for (concept of module.concepts; track concept.id) {
+              <li>
+                <button
+                  type="button"
+                  class="module-link"
+                  [class.selected-concept]="conceptDraft().id === concept.id"
+                  [attr.aria-pressed]="conceptDraft().id === concept.id"
+                  (click)="editConcept(concept)"
+                >
+                  <span>
+                    <strong>{{ concept.name }}</strong>
+                    <small>{{ conceptSummary(concept) }}</small>
+                  </span>
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+      <app-concept-editor
+        [module]="module"
+        [(value)]="conceptDraft"
+        [busy]="busy()"
+        (saved)="saveConcept()"
+        (duplicate)="duplicateConcept()"
+        (deactivate)="deactivateConcept()"
+      />
+    </div>
+  } @else {
+    <div class="columns">
+      <section class="panel">
+        <h2>Novo módulo</h2>
+        <form class="form-grid" (submit)="createModule($event)">
+          <app-module-fields [(value)]="moduleDraft" />
+          <button type="submit" [disabled]="busy()">Criar módulo</button>
+        </form>
+      </section>
+      <section class="panel">
+        <h2>Meus módulos</h2>
+        <label class="import-control"
+          >Importar módulo JSON
+          <input
+            type="file"
+            accept=".json,application/json"
+            [disabled]="busy()"
+            (change)="importFile($event)"
+          />
+        </label>
+        @if (loading()) {
+          <p class="muted" role="status">Carregando lista...</p>
+        } @else if (modules().length === 0) {
+          <app-empty-state>Nenhum módulo criado.</app-empty-state>
+        } @else {
+          <ul class="module-list">
+            @for (item of modules(); track item.id) {
+              <li class="module-row">
+                <button type="button" class="module-link" (click)="openModule(item.id)">
+                  <span>
+                    <strong>{{ item.title }}</strong>
+                    <small
+                      >{{ item.subject }} · {{ item.activeConceptCount }} conceitos ativos</small
+                    >
+                  </span>
+                  <span class="status">{{ statusLabels[item.status] }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="secondary"
+                  [disabled]="busy()"
+                  (click)="exportModule(item.id)"
+                >
+                  Exportar JSON
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    </div>
+  }
+</main>

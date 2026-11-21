@@ -1,0 +1,70 @@
+.sentence {
+  font-size: 1.15rem;
+  line-height: 2.8;
+}
+
+.slot-target {
+  display: inline-flex;
+  position: relative;
+  min-height: 2.75rem;
+  vertical-align: middle;
+}
+
+.slot {
+  min-width: 8rem;
+  min-height: 2.75rem;
+  margin: 0 0.25rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: 0.4rem;
+  padding: 0.45rem;
+  color: var(--text);
+  background: var(--surface-2);
+  font: inherit;
+  line-height: 1.55;
+  cursor: pointer;
+}
+
+/* The slot under the dragged word. */
+.slot-target.cdk-drop-list-dragging .slot {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+  background: var(--game-cell-active-bg);
+}
+
+/* CDK moves the placeholder into the list under the pointer; inside the sentence it would push the text around. */
+.slot-target .cdk-drag-placeholder {
+  display: none;
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 0;
+  list-style: none;
+}
+
+.option {
+  padding: 0.55rem 0.8rem;
+}
+
+.option[aria-pressed='true'] {
+  border-color: var(--border-strong);
+  background: var(--accent-soft);
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.option:disabled {
+  border-style: dashed;
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+
+.options .cdk-drag-placeholder {
+  opacity: 0.5;
+}
+
+.cdk-drag-preview {
+  opacity: 0.85;
+}

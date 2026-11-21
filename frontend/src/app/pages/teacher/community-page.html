@@ -1,0 +1,122 @@
+<main class="teacher-page">
+  <app-page-header eyebrow="Comunidade" title="Módulos compartilhados" />
+  @if (success()) {
+    <div class="notice" role="status" aria-live="polite">
+      {{ success() }}
+      <a class="button-link" routerLink="/teacher/modules">Ver em Módulos</a>
+      <button type="button" aria-label="Dispensar" (click)="success.set('')">×</button>
+    </div>
+  }
+  @if (error()) {
+    <p role="alert" class="banner-error">{{ error() }}</p>
+  }
+
+  <section class="panel">
+    <div class="heading">
+      <h2>Meus envios</h2>
+      <button type="button" (click)="shareOpen.set(!shareOpen())">Enviar módulo</button>
+    </div>
+    @if (shareOpen()) {
+      <div class="share-box">
+        <p>
+          Será criada uma cópia na comunidade. Seu nome e sua instituição ficarão visíveis para
+          outros professores. Alterações futuras no módulo original não são enviadas
+          automaticamente.
+        </p>
+        @for (module of available(); track module.id) {
+          <div class="row">
+            <span
+              >{{ module.title }} · {{ module.subject }} ·
+              {{ module.activeConceptCount }} conceitos</span
+            >
+            <button type="button" [disabled]="!!busy()" (click)="share(module.id)">Enviar</button>
+          </div>
+        } @empty {
+          <app-empty-state>Nenhum módulo publicado disponível para envio.</app-empty-state>
+        }
+      </div>
+    }
+    @for (item of mine(); track item.id) {
+      <div class="row">
+        <span>
+          <strong>{{ item.title }}</strong>
+          <small
+            >{{ item.subject }} · {{ item.activeConceptCount }} conceitos ·
+            {{ sharedDate(item.sharedAtUtc) }} · {{ item.downloadCount }} downloads</small
+          >
+        </span>
+        <span class="row-actions">
+          <a
+            class="button-link"
+            routerLink="/teacher/modules"
+            [queryParams]="{ open: item.id, from: 'community' }"
+            >Editar</a
+          >
+          <button type="button" [disabled]="!!busy()" (click)="remove(item.id)">Excluir</button>
+        </span>
+      </div>
+    } @empty {
+      <app-empty-state>
+        Nenhum envio ainda. Compartilhe uma cópia de um módulo publicado.
+      </app-empty-state>
+    }
+  </section>
+
+  <section class="panel">
+    <h2>Módulos da comunidade</h2>
+    <div class="filters">
+      <input
+        #searchInput
+        aria-label="Buscar módulos"
+        placeholder="Buscar"
+        [value]="search()"
+        (input)="search.set(searchInput.value)"
+      />
+      <input
+        #subjectInput
+        aria-label="Filtrar por assunto"
+        placeholder="Assunto"
+        [value]="subject()"
+        (input)="subject.set(subjectInput.value)"
+      />
+    </div>
+    @for (item of items(); track item.id) {
+      <article class="card">
+        <div>
+          <h3>{{ item.title }}</h3>
+          <p class="description">{{ item.description }}</p>
+          <p>
+            {{ item.subject }} · {{ item.activeConceptCount }} conceitos ·
+            {{ item.downloadCount }} downloads
+          </p>
+          <small
+            >{{ item.authorName
+            }}{{ item.authorInstitution ? ' · ' + item.authorInstitution : '' }}</small
+          >
+          <div>
+            @if (item.crosswordEnabled) {
+              <span class="chip">Cruzadinha</span>
+            }
+            @if (item.alreadyDownloaded) {
+              <span class="chip">Você já baixou</span>
+            }
+          </div>
+        </div>
+        <button type="button" [disabled]="!!busy()" (click)="download(item)">
+          {{
+            busy() === item.id
+              ? 'Baixando…'
+              : item.alreadyDownloaded
+                ? 'Baixar novamente'
+                : 'Baixar'
+          }}
+        </button>
+      </article>
+    } @empty {
+      <app-empty-state>Nenhum módulo encontrado.</app-empty-state>
+    }
+    @if (total() > items().length) {
+      <button type="button" (click)="loadMore()">Carregar mais</button>
+    }
+  </section>
+</main>

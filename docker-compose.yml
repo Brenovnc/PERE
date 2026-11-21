@@ -1,3 +1,5 @@
+# PERE inteiro com um comando: docker compose up -d --build  →  http://localhost:8080
+# Só o banco, para desenvolver localmente: docker compose up -d postgres
 services:
   postgres:
     image: postgres:17-alpine
@@ -16,6 +18,34 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  api:
+    build: ./backend
+    container_name: pere-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      PORT: "5080"
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=trabalho_cae;Username=trabalho_cae;Password=local_dev_password
+      # Creates/updates the schema and the demonstration data on startup (both off unless set).
+      PERE_APPLY_MIGRATIONS: "true"
+      PERE_SEED_DEMO: "true"
+      # The app is served over plain http://localhost, so the cookies cannot require HTTPS.
+      PERE_ALLOW_INSECURE_COOKIES: "true"
+
+  web:
+    build: ./frontend
+    container_name: pere-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend/nginx-api-proxy.conf:/etc/nginx/extra/api-proxy.conf:ro
 
 volumes:
   postgres_data:

@@ -1,9 +1,9 @@
-﻿using System.Net;
+using System.Net;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
+using StudyPlatform.Api.Domain.Enums;
 using StudyPlatform.Api.DTOs.Concepts;
 using StudyPlatform.Api.DTOs.Modules;
-using StudyPlatform.Api.Domain.Enums;
 using StudyPlatform.Api.Exceptions;
 using StudyPlatform.Api.Models;
 using StudyPlatform.Api.Models.Activities;
@@ -12,7 +12,8 @@ using StudyPlatform.Api.Services.Learning;
 namespace StudyPlatform.Api.Services.Modules;
 
 public sealed partial class ModuleService
-{    public async Task<ConceptDetailsResponse> CreateConceptAsync(Guid teacherId, Guid moduleId, SaveConceptRequest request, CancellationToken ct)
+{
+    public async Task<ConceptDetailsResponse> CreateConceptAsync(Guid teacherId, Guid moduleId, SaveConceptRequest request, CancellationToken ct)
     {
         ValidateConceptRequest(request);
         var module = await OwnedModuleQuery(teacherId, moduleId).SingleOrDefaultAsync(ct)
@@ -23,6 +24,7 @@ public sealed partial class ModuleService
         db.Concepts.Add(concept);
         module.UpdatedAtUtc = _now;
         await db.SaveChangesAsync(ct);
+        contentCache.Invalidate(moduleId);
         return ConceptResponseMapper.Map(concept);
     }
 
@@ -55,6 +57,7 @@ public sealed partial class ModuleService
         module.UpdatedAtUtc = _now;
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
+        contentCache.Invalidate(moduleId);
         return ConceptResponseMapper.Map(concept);
     }
 
@@ -76,6 +79,7 @@ public sealed partial class ModuleService
         db.Concepts.Add(copy);
         module.UpdatedAtUtc = _now;
         await db.SaveChangesAsync(ct);
+        contentCache.Invalidate(moduleId);
         return ConceptResponseMapper.Map(copy);
     }
 
@@ -84,13 +88,14 @@ public sealed partial class ModuleService
         var concept = await LoadConceptAsync(teacherId, moduleId, conceptId, ct);
         concept.IsActive = false;
         concept.UpdatedAtUtc = _now;
-foreach (var clue in concept.Clues) clue.IsActive = false;
+        foreach (var clue in concept.Clues) clue.IsActive = false;
         foreach (var activity in concept.RecognitionActivities) activity.IsActive = false;
         foreach (var activity in concept.FillBlankActivities) activity.IsActive = false;
         foreach (var activity in concept.OrderingActivities) activity.IsActive = false;
         var module = await OwnedModuleQuery(teacherId, moduleId).SingleAsync(ct);
         module.UpdatedAtUtc = _now;
         await db.SaveChangesAsync(ct);
+        contentCache.Invalidate(moduleId);
     }
 
     public async Task<PublicationValidationResponse> ValidatePublicationAsync(Guid teacherId, Guid moduleId, CancellationToken ct)
@@ -157,6 +162,7 @@ foreach (var clue in concept.Clues) clue.IsActive = false;
         module.Status = ModuleStatus.Published;
         module.UpdatedAtUtc = _now;
         await db.SaveChangesAsync(ct);
+        contentCache.Invalidate(moduleId);
         return await GetAsync(teacherId, moduleId, ct);
     }
 
@@ -237,8 +243,11 @@ foreach (var clue in concept.Clues) clue.IsActive = false;
             var item = input.Id is Guid id
                 ? existing.TryGetValue(id, out var found) ? found : throw BadRequest("invalid_activity_id", "Uma atividade n\u00E3o pertence a este conceito.")
                 : new RecognitionActivity { ConceptId = concept.Id, CreatedAtUtc = now };
-            item.Statement = input.Statement.Trim(); item.IsCorrect = input.IsCorrect;
-            item.Explanation = input.Explanation.Trim(); item.IsActive = true; item.UpdatedAtUtc = now;
+            item.Statement = input.Statement.Trim();
+            item.IsCorrect = input.IsCorrect;
+            item.Explanation = input.Explanation.Trim();
+            item.IsActive = true;
+            item.UpdatedAtUtc = now;
             if (input.Id is null)
             {
                 db.RecognitionActivities.Add(item);
@@ -258,7 +267,9 @@ foreach (var clue in concept.Clues) clue.IsActive = false;
             var item = input.Id is Guid id
                 ? existing.TryGetValue(id, out var found) ? found : throw BadRequest("invalid_activity_id", "Uma atividade não pertence a este conceito.")
                 : new FillBlankActivity { ConceptId = concept.Id, CreatedAtUtc = now };
-            item.Text = input.Text.Trim(); item.IsActive = true; item.UpdatedAtUtc = now;
+            item.Text = input.Text.Trim();
+            item.IsActive = true;
+            item.UpdatedAtUtc = now;
             if (input.Answers.Select(answer => answer.SlotNumber).Distinct().Count() != input.Answers.Count)
                 throw BadRequest("duplicate_fill_blank_slot", "Cada slot de lacuna deve possuir uma única resposta.");
             var answers = item.Answers.ToDictionary(answer => answer.SlotNumber);
@@ -311,7 +322,9 @@ foreach (var clue in concept.Clues) clue.IsActive = false;
             var item = input.Id is Guid id
                 ? existing.TryGetValue(id, out var found) ? found : throw BadRequest("invalid_activity_id", "Uma atividade não pertence a este conceito.")
                 : new OrderingActivity { ConceptId = concept.Id, CreatedAtUtc = now };
-            item.Instruction = input.Instruction.Trim(); item.IsActive = true; item.UpdatedAtUtc = now;
+            item.Instruction = input.Instruction.Trim();
+            item.IsActive = true;
+            item.UpdatedAtUtc = now;
             if (input.Items.Count != input.Items.Distinct(StringComparer.OrdinalIgnoreCase).Count())
                 throw BadRequest("duplicate_ordering_item", "Os itens da ordenação devem ser distintos.");
             var itemByPosition = item.Items.ToDictionary(entry => entry.Position);

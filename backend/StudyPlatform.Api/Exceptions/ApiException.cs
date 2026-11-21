@@ -1,4 +1,4 @@
-﻿namespace StudyPlatform.Api.Exceptions;
+namespace StudyPlatform.Api.Exceptions;
 
 public sealed class ApiException : Exception
 {

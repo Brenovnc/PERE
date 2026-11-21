@@ -1,0 +1,150 @@
+.back {
+  display: inline-block;
+  min-height: 2.7rem;
+  margin-bottom: 1.4rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  color: var(--text);
+  background: var(--surface-3);
+  text-decoration: none;
+}
+
+.back:focus-visible,
+.retry:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.retry {
+  min-height: 2.5rem;
+  margin-left: 0.8rem;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--danger-border);
+  border-radius: 0.5rem;
+  color: var(--danger-text);
+  background: var(--danger-bg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.student-info,
+.module-card,
+.empty {
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  background: var(--surface);
+}
+
+.student-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3rem;
+  margin-bottom: 1rem;
+  padding: 1.1rem 1.25rem;
+}
+
+.student-info div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.student-info span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.student-info strong {
+  overflow-wrap: anywhere;
+}
+
+.empty {
+  padding: clamp(1.2rem, 4vw, 2rem);
+}
+
+.empty h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+}
+
+.module-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 1rem;
+}
+
+.module-card {
+  min-width: 0;
+  padding: 1.25rem;
+}
+
+.module-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.module-title p {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.module-title h2 {
+  margin: 0.3rem 0 0;
+  font-size: 1.15rem;
+}
+
+.module-title > strong {
+  flex: 0 0 auto;
+  font-size: 1.35rem;
+}
+
+.progress-track {
+  height: 0.55rem;
+  margin-top: 1.2rem;
+  overflow: hidden;
+  border-radius: 1rem;
+  background: var(--surface-3);
+}
+
+.progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent-soft);
+}
+
+.caption {
+  margin: 0;
+  padding: 0.6rem 0 1rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.7rem 0.8rem;
+  margin: 0;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+}
+
+.stats dt {
+  color: var(--text-muted);
+}
+
+.stats dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 720px) {
+  .student-info {
+    gap: 1rem 2rem;
+  }
+}

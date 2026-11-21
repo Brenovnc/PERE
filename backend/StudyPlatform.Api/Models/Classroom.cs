@@ -12,6 +12,6 @@ public sealed class Classroom
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
 
     public Teacher Teacher { get; set; } = null!;
-    public ICollection<Student> Students { get; set; } = new List<Student>();
+    public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
     public ICollection<ClassroomModule> ClassroomModules { get; set; } = new List<ClassroomModule>();
 }

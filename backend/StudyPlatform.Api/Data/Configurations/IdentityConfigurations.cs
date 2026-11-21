@@ -30,40 +30,19 @@ public sealed class TeacherConfiguration : IEntityTypeConfiguration<Teacher>
     }
 }
 
-public sealed class TeacherPhotoConfiguration : IEntityTypeConfiguration<TeacherPhoto>
-{
-    public void Configure(EntityTypeBuilder<TeacherPhoto> builder)
-    {
-        builder.ToTable("TeacherPhotos");
-        builder.HasKey(x => x.TeacherId);
-        builder.Property(x => x.Data).IsRequired();
-        builder.Property(x => x.ContentType).HasMaxLength(32).IsRequired();
-        builder.Property(x => x.UpdatedAtUtc).IsRequired();
-        builder.HasOne(x => x.Teacher).WithOne(x => x.Photo).HasForeignKey<TeacherPhoto>(x => x.TeacherId).OnDelete(DeleteBehavior.Cascade);
-    }
-}
-
 public sealed class StudentConfiguration : IEntityTypeConfiguration<Student>
 {
     public void Configure(EntityTypeBuilder<Student> builder)
     {
-        builder.ToTable("Students", table =>
-        {
-            table.HasCheckConstraint(
-                "CK_Students_TemporaryAccessCodeFailedAttempts_NonNegative",
-                "\"TemporaryAccessCodeFailedAttempts\" >= 0");
-        });
+        builder.ToTable("Students");
         builder.HasKey(x => x.Id);
-        builder.Property(x => x.EnrollmentNumber).HasMaxLength(64).IsRequired();
-        builder.Property(x => x.Name).HasMaxLength(120);
-        builder.Property(x => x.PasswordHash);
-        builder.Property(x => x.TemporaryAccessCodeHash);
-        builder.HasIndex(x => new { x.ClassroomId, x.EnrollmentNumber }).IsUnique();
+        builder.Property(x => x.Name).HasMaxLength(120).IsRequired();
+        builder.Property(x => x.Email).HasMaxLength(320).IsRequired();
+        builder.Property(x => x.EmailNormalized)
+            .HasComputedColumnSql("lower(\"Email\")", stored: true);
+        builder.Property(x => x.PasswordHash).IsRequired();
+        builder.HasIndex(x => x.EmailNormalized).IsUnique();
 
-        builder.HasOne(x => x.Classroom)
-            .WithMany(x => x.Students)
-            .HasForeignKey(x => x.ClassroomId)
-            .OnDelete(DeleteBehavior.Restrict);
         builder.HasMany(x => x.ConceptStates)
             .WithOne(x => x.Student)
             .HasForeignKey(x => x.StudentId)
@@ -75,6 +54,27 @@ public sealed class StudentConfiguration : IEntityTypeConfiguration<Student>
         builder.HasMany(x => x.ActivityAttempts)
             .WithOne(x => x.Student)
             .HasForeignKey(x => x.StudentId)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+public sealed class EnrollmentConfiguration : IEntityTypeConfiguration<Enrollment>
+{
+    public void Configure(EntityTypeBuilder<Enrollment> builder)
+    {
+        builder.ToTable("Enrollments");
+        // The composite key also enforces one enrollment per student and classroom.
+        builder.HasKey(x => new { x.StudentId, x.ClassroomId });
+        builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(16).IsRequired();
+        builder.HasIndex(x => new { x.ClassroomId, x.Status });
+
+        builder.HasOne(x => x.Student)
+            .WithMany(x => x.Enrollments)
+            .HasForeignKey(x => x.StudentId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(x => x.Classroom)
+            .WithMany(x => x.Enrollments)
+            .HasForeignKey(x => x.ClassroomId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }
@@ -95,10 +95,6 @@ public sealed class ClassroomConfiguration : IEntityTypeConfiguration<Classroom>
         builder.HasOne(x => x.Teacher)
             .WithMany(x => x.Classrooms)
             .HasForeignKey(x => x.TeacherId)
-            .OnDelete(DeleteBehavior.Restrict);
-        builder.HasMany(x => x.Students)
-            .WithOne(x => x.Classroom)
-            .HasForeignKey(x => x.ClassroomId)
             .OnDelete(DeleteBehavior.Restrict);
         builder.HasMany(x => x.ClassroomModules)
             .WithOne(x => x.Classroom)
@@ -122,7 +118,6 @@ public sealed class ModuleConfiguration : IEntityTypeConfiguration<Module>
         builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(16).IsRequired();
         builder.Property(x => x.CrosswordEnabled).HasDefaultValue(false);
         builder.Property(x => x.CrosswordAllowAllWords).HasDefaultValue(false);
-        builder.Property(x => x.AllowAdvanceReview).HasDefaultValue(false);
         builder.HasIndex(x => x.TeacherId);
 
         builder.HasOne(x => x.Teacher)

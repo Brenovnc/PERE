@@ -111,9 +111,9 @@ public sealed class ActivityAttemptConfiguration : IEntityTypeConfiguration<Acti
         builder.Property(x => x.ActivityType).HasConversion<string>().HasMaxLength(24).IsRequired();
         builder.Property(x => x.FsrsRating).HasConversion<string>().HasMaxLength(12);
         builder.Property(x => x.AnswerJson).HasColumnType("jsonb");
-        builder.Property(x => x.ActivitySnapshotJson).HasColumnType("jsonb").IsRequired();
         builder.HasIndex(x => new { x.StudentId, x.ConceptId, x.CreatedAtUtc });
         builder.HasIndex(x => new { x.StudySessionId, x.CreatedAtUtc });
+        builder.HasIndex(x => new { x.StudentId, x.AnsweredAtUtc });
         builder.HasIndex(x => x.PresentationId).IsUnique();
 
         builder.HasOne(x => x.RecognitionActivity)

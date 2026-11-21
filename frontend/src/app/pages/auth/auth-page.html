@@ -1,0 +1,93 @@
+<main class="grid min-h-screen place-items-center p-5">
+  <section
+    class="relative w-[min(100%,48rem)] rounded-[1.25rem] border border-border bg-surface p-[clamp(1.25rem,5vw,2.75rem)] shadow-card"
+  >
+    <div class="absolute top-4 right-4"><app-theme-toggle /></div>
+
+    <div class="mb-4 flex flex-col items-center text-center">
+      <app-pere-logo [size]="48" />
+      <p class="mt-0 mb-[0.65rem] text-[0.8rem] font-bold uppercase tracking-[0.1em] text-accent">
+        PERE
+      </p>
+    </div>
+    <h1
+      class="my-[0.4rem] text-center text-[clamp(1.55rem,7vw,1.8rem)] leading-[1.15] min-[481px]:text-[2.5rem] min-[481px]:leading-[1.1]"
+    >
+      Plataforma Educacional de Repetição Espaçada
+    </h1>
+    <p class="mt-[0.85rem] mb-6 text-center leading-[1.6] text-text">
+      Entre para acessar seus módulos e atividades.
+    </p>
+    @if (notice()) {
+      <p class="text-center text-success-text" role="status">{{ notice() }}</p>
+    }
+
+    <section
+      class="overflow-hidden rounded-2xl border border-border bg-surface shadow-card"
+      aria-labelledby="auth-title"
+    >
+      <div
+        class="flex gap-[0.35rem] overflow-x-auto border-b border-border p-[0.65rem]"
+        role="tablist"
+        aria-label="Tipo de acesso"
+      >
+        @for (item of modes; track item.id; let index = $index) {
+          <button
+            #tab
+            type="button"
+            role="tab"
+            [id]="'auth-tab-' + item.id"
+            [attr.aria-selected]="mode() === item.id"
+            aria-controls="auth-panel"
+            [tabIndex]="mode() === item.id ? 0 : -1"
+            class="min-h-[2.7rem] shrink-0 cursor-pointer rounded-t-[0.6rem] border border-transparent bg-transparent px-[0.8rem] py-[0.55rem] text-muted transition-colors hover:bg-surface-2 hover:text-text focus-visible:outline-offset-[-3px] aria-selected:relative aria-selected:z-1 aria-selected:-mb-px aria-selected:border-border aria-selected:border-b-surface aria-selected:bg-surface aria-selected:text-heading aria-selected:hover:bg-surface"
+            (click)="selectMode(item.id)"
+            (keydown)="onTabKeydown($event, index)"
+          >
+            {{ item.label }}
+          </button>
+        }
+      </div>
+
+      <div
+        id="auth-panel"
+        role="tabpanel"
+        tabindex="0"
+        class="p-[1.4rem] focus-visible:outline-3 focus-visible:outline-offset-[-3px] focus-visible:outline-focus"
+        [attr.aria-labelledby]="'auth-tab-' + mode()"
+      >
+        <h2 id="auth-title" class="mt-0 mb-4 text-[1.35rem]">{{ form().title }}</h2>
+        <form (submit)="submit($event)">
+          @for (field of form().fields; track field.name) {
+            <label class="my-[0.9rem] grid gap-[0.4rem] text-[0.92rem] text-text">
+              <span>{{ field.label }}</span>
+              <input
+                class="w-full rounded-[0.55rem] border border-border-strong bg-surface p-3 [font:inherit] text-text focus-visible:outline-offset-[-3px]"
+                [name]="field.name"
+                [type]="field.type ?? 'text'"
+                [attr.autocomplete]="field.autocomplete"
+                [attr.maxlength]="field.maxLength"
+                [attr.minlength]="field.minLength ?? null"
+                [disabled]="submitting()"
+                required
+              />
+            </label>
+          }
+          @if (error()) {
+            <p class="text-danger-text" role="alert">{{ error() }}</p>
+          }
+          <button
+            type="submit"
+            class="cursor-pointer rounded-[0.6rem] border border-border bg-cta px-[0.85rem] py-[0.65rem] text-cta-text focus-visible:outline-offset-[-3px] disabled:cursor-wait"
+            [disabled]="submitting()"
+          >
+            {{ submitting() ? 'Enviando…' : 'Continuar' }}
+          </button>
+        </form>
+      </div>
+    </section>
+    <p class="mt-6 mb-0 text-center">
+      <a routerLink="/visitor">Estudar sem conta (modo visitante)</a>
+    </p>
+  </section>
+</main>

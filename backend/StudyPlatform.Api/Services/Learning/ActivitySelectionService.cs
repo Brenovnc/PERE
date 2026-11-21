@@ -35,35 +35,37 @@ internal sealed record ActivitySnapshot(
 public sealed class ActivitySelectionService(
     ApplicationDbContext db,
     ActivityCompatibilityService compatibility,
-    ConceptEligibilityService eligibility,
+    ModuleContentCache contentCache,
     LearningProgressionService progression,
     TimeProvider timeProvider)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly TimeSpan RecentFailureWindow = TimeSpan.FromDays(14);
 
+    /// <summary>
+    /// Chooses and adds the next presentation to the context. The caller is responsible for SaveChanges,
+    /// so the whole answer/selection step is persisted in a single round trip.
+    /// </summary>
     public async Task<SessionActivityPresentation?> PresentNextAsync(StudySession session, CancellationToken ct)
     {
         if (session.Status != StudySessionStatus.Active || session.CompletedActivities >= 10)
             return null;
 
-        var concepts = await db.Concepts.AsNoTracking()
-            .Where(c => c.ModuleId == session.ModuleId && c.IsActive
-                && (session.SelectedConceptId == null || c.Id == session.SelectedConceptId))
-            .Include(c => c.Keywords.Where(k => k.IsActive))
-            .Include(c => c.Clues.Where(cl => cl.IsActive))
-            .Include(c => c.RecognitionActivities.Where(a => a.IsActive))
-            .Include(c => c.FillBlankActivities.Where(a => a.IsActive)).ThenInclude(a => a.Answers)
-            .Include(c => c.FillBlankActivities.Where(a => a.IsActive)).ThenInclude(a => a.Distractors)
-            .Include(c => c.OrderingActivities.Where(a => a.IsActive)).ThenInclude(a => a.Items)
-            .AsSplitQuery()
-            .OrderBy(c => c.Id).ToListAsync(ct);
-        var states = await db.StudentConceptStates.AsNoTracking()
-            .Where(s => s.StudentId == session.StudentId && concepts.Select(c => c.Id).Contains(s.ConceptId))
+        var moduleConcepts = await contentCache.GetActiveConceptsAsync(session.ModuleId, ct);
+        var concepts = session.SelectedConceptId is null
+            ? moduleConcepts
+            : moduleConcepts.Where(c => c.Id == session.SelectedConceptId).ToList();
+        // Prerequisite eligibility is evaluated in memory, so prerequisite states are loaded too.
+        var stateConceptIds = concepts.Select(c => c.Id)
+            .Concat(concepts.SelectMany(c => c.Prerequisites.Select(p => p.PrerequisiteConceptId)))
+            .Distinct().ToList();
+        // Tracked on purpose: while an answer is being submitted, EF returns the already-updated in-memory state.
+        var states = await db.StudentConceptStates
+            .Where(s => s.StudentId == session.StudentId && stateConceptIds.Contains(s.ConceptId))
             .ToDictionaryAsync(s => s.ConceptId, ct);
         var used = await db.SessionActivityPresentations.AsNoTracking()
             .Where(p => p.StudySessionId == session.Id)
-            .Select(p => new { p.ConceptId, p.ActivityType, p.ActivityId })
+            .Select(p => new { p.ConceptId, p.ActivityType, p.ActivityId, p.SequenceNumber })
             .ToListAsync(ct);
         var practiceUsage = session.Mode == StudySessionMode.FreePractice
             ? await db.SessionActivityPresentations.AsNoTracking()
@@ -83,7 +85,7 @@ public sealed class ActivitySelectionService(
             {
                 if (learningState == LearningState.Mastered && (state?.DueAtUtc is null || Utc(state.DueAtUtc.Value) > now)) continue;
                 if (learningState == LearningState.FreeRecall && state?.FreeRecallSuccessCount > 0 && (state.DueAtUtc is null || Utc(state.DueAtUtc.Value) > now)) continue;
-                if (learningState == LearningState.New && !await eligibility.CanIntroduceAsync(session.StudentId, concept.Id, ct)) continue;
+                if (learningState == LearningState.New && !PrerequisitesMastered(concept, states)) continue;
             }
             var tier = session.Mode == StudySessionMode.FreePractice
                 ? practiceUsage.GetValueOrDefault(concept.Id)
@@ -102,9 +104,8 @@ public sealed class ActivitySelectionService(
         }
 
         if (candidates.Count == 0) return null;
-        var previousConceptId = await db.SessionActivityPresentations.AsNoTracking()
-            .Where(x => x.StudySessionId == session.Id).OrderByDescending(x => x.SequenceNumber)
-            .Select(x => (Guid?)x.ConceptId).FirstOrDefaultAsync(ct);
+        var previousConceptId = used.OrderByDescending(x => x.SequenceNumber)
+            .Select(x => (Guid?)x.ConceptId).FirstOrDefault();
         var ordered = candidates.OrderBy(c => c.Tier)
             .ThenBy(c => c.Tier == 0 ? c.State?.DueAtUtc : null)
             .ThenByDescending(c => c.Tier == 1 ? c.State?.LastFailureAtUtc : null)
@@ -117,9 +118,9 @@ public sealed class ActivitySelectionService(
                 ?? ordered.First();
 
         if (session.Mode == StudySessionMode.Normal && chosen.LearningState == LearningState.New)
-            await progression.MarkPresentedAsync(session.StudentId, chosen.Concept.Id, ct);
+            progression.MarkPresented(session.StudentId, chosen.Concept.Id, chosen.State, now);
 
-        var sequence = await db.SessionActivityPresentations.Where(x => x.StudySessionId == session.Id).CountAsync(ct) + 1;
+        var sequence = used.Count + 1;
         var presentation = new SessionActivityPresentation
         {
             StudySessionId = session.Id,
@@ -133,9 +134,13 @@ public sealed class ActivitySelectionService(
         };
         db.SessionActivityPresentations.Add(presentation);
         session.TotalActivities = Math.Min(sequence, 10);
-        await db.SaveChangesAsync(ct);
         return presentation;
     }
+
+    /// <summary>A NEW concept can be introduced only when every prerequisite is MASTERED.</summary>
+    private static bool PrerequisitesMastered(Concept concept, IReadOnlyDictionary<Guid, StudentConceptState> states) =>
+        concept.Prerequisites.Select(p => p.PrerequisiteConceptId).Distinct()
+            .All(id => states.TryGetValue(id, out var state) && state.LearningState == LearningState.Mastered);
 
     private static Candidate ChooseFreePracticeCandidate(IReadOnlyCollection<Candidate> candidates, Guid? previousConceptId)
     {
@@ -155,15 +160,25 @@ public sealed class ActivitySelectionService(
             ?? throw new InvalidOperationException("Saved activity snapshot is invalid.");
         object payload = snapshot.Type switch
         {
-            "EXPOSURE" => new { keywordCount = snapshot.Keywords?.Count ?? 0,
+            "EXPOSURE" => new
+            {
+                keywordCount = snapshot.Keywords?.Count ?? 0,
                 revealedCount = presentation.RevealedClueCount,
                 revealedKeywords = (snapshot.Keywords ?? []).Take(presentation.RevealedClueCount).Select(x => x.Value).ToArray(),
-                segments = BuildExposureSegments(snapshot.Definition ?? string.Empty, snapshot.Keywords ?? [], presentation.RevealedClueCount) },
+                segments = BuildExposureSegments(snapshot.Definition ?? string.Empty, snapshot.Keywords ?? [], presentation.RevealedClueCount)
+            },
             "TRUE_FALSE" => new { statement = snapshot.Statement },
-            "FILL_BLANK" => new { text = snapshot.Text, slotNumbers = (snapshot.Slots ?? []).Select(x => x.SlotNumber).ToArray(),
-                options = (snapshot.Options ?? []).Select(x => x.Text).ToArray() },
-            "GUESS_CONCEPT" => new { clueCount = snapshot.Clues?.Count ?? 0,
-                clues = (snapshot.Clues ?? []).Take(presentation.RevealedClueCount).Select(x => x.Text).ToArray() },
+            "FILL_BLANK" => new
+            {
+                text = snapshot.Text,
+                slotNumbers = (snapshot.Slots ?? []).Select(x => x.SlotNumber).ToArray(),
+                options = (snapshot.Options ?? []).Select(x => x.Text).ToArray()
+            },
+            "GUESS_CONCEPT" => new
+            {
+                clueCount = snapshot.Clues?.Count ?? 0,
+                clues = (snapshot.Clues ?? []).Take(presentation.RevealedClueCount).Select(x => x.Text).ToArray()
+            },
             "ORDERING" => new { instruction = snapshot.Instruction, items = (snapshot.Items ?? []).Select(x => new { id = x.Id, text = x.Text }).ToArray() },
             _ => throw new InvalidOperationException("Unknown saved activity type."),
         };

@@ -1,0 +1,204 @@
+<main class="mx-auto w-[min(100%-2rem,68rem)] pt-6 pb-12 max-[480px]:w-[min(100%-1.25rem,68rem)]">
+  <header class="mb-6 flex items-center justify-between gap-4 max-[480px]:items-start">
+    <button type="button" class="btn" (click)="backToModules()">← Módulos</button>
+    <div class="flex items-center gap-3">
+      <app-theme-toggle />
+      @if (auth.user()) {
+        <button type="button" class="btn" (click)="logout()">Sair</button>
+      }
+    </div>
+  </header>
+
+  @if (loading()) {
+    <p role="status">Carregando módulo…</p>
+  }
+  @if (error()) {
+    <p role="alert">{{ error() }}</p>
+  }
+
+  @if (module(); as module) {
+    <app-page-header [eyebrow]="module.subject" [title]="module.title">
+      @if (module.teacherName) {
+        <app-teacher-badge
+          [name]="module.teacherName"
+          [institution]="module.teacherInstitution"
+          [size]="56"
+        />
+      }
+    </app-page-header>
+
+    <section class="card">
+      @if (module.description) {
+        <p>{{ module.description }}</p>
+      }
+      <section
+        class="my-6 rounded-[0.75rem] border border-border bg-surface-2 p-4"
+        aria-labelledby="official-progress-title"
+      >
+        <h2 id="official-progress-title" class="mt-0 mb-2">Seu progresso oficial</h2>
+        <div
+          class="h-[0.85rem] overflow-hidden rounded-full bg-surface-3"
+          role="progressbar"
+          aria-label="Progresso do módulo"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          [attr.aria-valuenow]="module.progressPercent"
+        >
+          <span
+            class="block h-full rounded-[inherit] bg-accent transition-[width] duration-200"
+            [style.width.%]="module.progressPercent"
+          ></span>
+        </div>
+        <p class="font-bold text-text">{{ module.progressPercent }}% dominado</p>
+        <p>{{ module.masteredConcepts }} de {{ module.activeConcepts }} conceitos dominados</p>
+        <ul class="my-2 flex flex-wrap gap-x-6 gap-y-[0.4rem] pl-5">
+          <li>{{ module.learningConcepts }} em aprendizagem</li>
+          <li>{{ module.notStartedConcepts }} ainda não iniciados</li>
+        </ul>
+        <div class="mt-[0.8rem] flex flex-wrap gap-x-8 gap-y-1 text-text max-[480px]:block">
+          <p class="my-1">
+            {{ module.pendingReviews }}
+            {{ module.pendingReviews === 1 ? 'revisão pendente' : 'revisões pendentes' }}
+          </p>
+          <p class="my-1">Próxima revisão: {{ nextReview() }}</p>
+        </div>
+      </section>
+      <div class="flex flex-wrap gap-3 max-[480px]:[&>button]:flex-[1_1_100%]">
+        @if (module.activeSessionId) {
+          <button type="button" class="btn" [disabled]="busy()" (click)="continueSession()">
+            {{ hasFreeSession() ? 'Continuar prática livre' : 'Continuar sessão' }}
+          </button>
+        } @else {
+          <button type="button" class="btn" [disabled]="busy()" (click)="begin('normal')">
+            {{ busy() ? 'Abrindo sessão…' : 'Iniciar estudo' }}
+          </button>
+        }
+      </div>
+    </section>
+
+    <section class="card mt-6" aria-labelledby="free-practice-title">
+      <h2 id="free-practice-title" class="my-2">Estudo livre</h2>
+      <p>Pratique qualquer conteúdo sem alterar seu progresso oficial.</p>
+      @if (hasNormalSession()) {
+        <p role="status">Conclua ou abandone sua sessão atual para começar uma prática livre.</p>
+      }
+      @if (hasFreeSession()) {
+        <p role="status">
+          A prática livre está em andamento; continue pela ação principal desta página.
+        </p>
+      } @else {
+        <div class="flex flex-wrap gap-3">
+          <button
+            type="button"
+            class="btn"
+            [disabled]="busy() || hasNormalSession() || concepts().length === 0"
+            (click)="begin('free')"
+          >
+            {{ busy() ? 'Abrindo prática…' : 'Praticar módulo inteiro' }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            [disabled]="busy() || hasNormalSession() || concepts().length === 0"
+            (click)="freeChoiceOpen.set(!freeChoiceOpen())"
+          >
+            Escolher conceito
+          </button>
+        </div>
+        @if (freeChoiceOpen()) {
+          <div class="mt-4 grid max-w-120 gap-[0.65rem]">
+            <label for="free-concept">Conceito para praticar</label>
+            <select
+              id="free-concept"
+              class="field"
+              [value]="selectedConcept()"
+              (change)="selectedConcept.set(conceptSelect.value)"
+              #conceptSelect
+            >
+              <option value="">Selecione um conceito</option>
+              @for (concept of concepts(); track concept.id) {
+                <option [value]="concept.id">{{ concept.name }}</option>
+              }
+            </select>
+            <button
+              type="button"
+              class="btn"
+              [disabled]="busy() || !selectedConcept()"
+              (click)="begin('free', selectedConcept())"
+            >
+              Praticar conceito
+            </button>
+          </div>
+        }
+      }
+    </section>
+
+    @if (module.crosswordEnabled) {
+      <section class="card mt-6" aria-labelledby="crossword-title">
+        <h2 id="crossword-title" class="my-2">Cruzadinha</h2>
+        <p>Um método alternativo de estudos para se divertir</p>
+        @if (module.crosswordAllowAllWords) {
+          <label class="my-4 flex items-center gap-[0.65rem]">
+            <input
+              type="checkbox"
+              role="switch"
+              class="h-[1.4rem] w-[2.7rem] accent-focus"
+              [checked]="allWords()"
+              (change)="allWords.set(allWordsSwitch.checked)"
+              #allWordsSwitch
+            />
+            Habilitar todas as palavras do módulo?
+          </label>
+        }
+        <button type="button" class="btn" (click)="openCrossword()">Começar</button>
+      </section>
+    }
+
+    <section
+      class="mt-6 rounded-[0.85rem] border border-danger-border bg-danger p-4"
+      aria-labelledby="reset-title"
+    >
+      <h2 id="reset-title" class="mt-0 mb-2">Reiniciar módulo</h2>
+      <p>O progresso atual deste módulo voltará ao início. O histórico continuará registrado.</p>
+      <button type="button" class="btn" [disabled]="busy()" (click)="confirmReset.set(true)">
+        Reiniciar módulo
+      </button>
+    </section>
+  }
+
+  @if (confirmReset()) {
+    <div class="fixed inset-0 z-20 grid place-items-center bg-[var(--overlay)] p-4">
+      <section
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="reset-confirm-title"
+        aria-describedby="reset-confirm-description"
+        class="w-[min(100%,34rem)] rounded-[0.9rem] border border-danger-border bg-surface p-[clamp(1rem,4vw,1.5rem)] text-text shadow-[0_1rem_3rem_var(--shadow)]"
+        cdkTrapFocus
+        [cdkTrapFocusAutoCapture]="true"
+      >
+        <h2 id="reset-confirm-title" class="mt-0 mb-2">Reiniciar módulo?</h2>
+        <p id="reset-confirm-description">
+          Seu progresso atual neste módulo voltará ao início. Suas sessões e atividades anteriores
+          continuarão registradas no histórico. Esta ação não pode ser desfeita.
+        </p>
+        <div
+          class="mt-5 flex flex-wrap justify-end gap-[0.65rem] max-[480px]:[&>button]:flex-[1_1_100%]"
+        >
+          <button
+            type="button"
+            class="btn btn-secondary"
+            cdkFocusInitial
+            [disabled]="busy()"
+            (click)="cancelReset()"
+          >
+            Cancelar
+          </button>
+          <button type="button" class="btn" [disabled]="busy()" (click)="resetProgress()">
+            {{ busy() ? 'Reiniciando…' : 'Reiniciar módulo' }}
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+</main>

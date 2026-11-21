@@ -22,7 +22,6 @@ public sealed class ActivityAttempt
     public int HintsUsed { get; set; }
     public FsrsRating? FsrsRating { get; set; }
     public string? AnswerJson { get; set; }
-    public required string ActivitySnapshotJson { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
     public Student Student { get; set; } = null!;

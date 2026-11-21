@@ -1,74 +1,64 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using StudyPlatform.Api.Data;
 using StudyPlatform.Api.Domain.Enums;
 using StudyPlatform.Api.Models;
 
 namespace StudyPlatform.Api.Services.Learning;
 
+/// <summary>
+/// Learning-state transitions of a concept. Methods change tracked entities only; the caller saves,
+/// so a whole answer is persisted in a single SaveChanges.
+/// </summary>
 public sealed class LearningProgressionService(
     ApplicationDbContext db,
     FsrsService fsrs,
-    PerformanceRatingService performance,
-    ConceptEligibilityService eligibility,
-    TimeProvider timeProvider)
+    PerformanceRatingService performance)
 {
-    public async Task<StudentConceptState> GetStateAsync(Guid studentId, Guid conceptId, CancellationToken cancellationToken = default)
-    {
-        var existing = await db.StudentConceptStates.AsNoTracking()
-            .SingleOrDefaultAsync(x => x.StudentId == studentId && x.ConceptId == conceptId, cancellationToken);
-        return existing ?? new StudentConceptState { StudentId = studentId, ConceptId = conceptId };
-    }
+    public Task<StudentConceptState?> FindTrackedStateAsync(Guid studentId, Guid conceptId, CancellationToken cancellationToken) =>
+        db.StudentConceptStates.SingleOrDefaultAsync(x => x.StudentId == studentId && x.ConceptId == conceptId, cancellationToken);
 
-    public async Task<StudentConceptState> MarkPresentedAsync(Guid studentId, Guid conceptId, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Moves a NEW concept to EXPOSURE when its first activity is shown. Does not check eligibility:
+    /// activity selection has already verified the prerequisites.
+    /// </summary>
+    public StudentConceptState MarkPresented(Guid studentId, Guid conceptId, StudentConceptState? trackedState, DateTime now)
     {
-        var initialState = await GetStateAsync(studentId, conceptId, cancellationToken);
-        if (initialState.LearningState == LearningState.New &&
-            !await eligibility.CanIntroduceAsync(studentId, conceptId, cancellationToken))
-            throw new InvalidOperationException("Concept is not eligible for introduction.");
-
-        var state = await GetOrCreateTrackedStateAsync(studentId, conceptId, cancellationToken);
+        var state = trackedState;
+        if (state is null)
+        {
+            state = new StudentConceptState { StudentId = studentId, ConceptId = conceptId };
+            db.StudentConceptStates.Add(state);
+        }
         if (state.LearningState == LearningState.New)
         {
             state.LearningState = LearningState.Exposure;
-            state.LastAttemptAtUtc = UtcNow();
-            await db.SaveChangesAsync(cancellationToken);
+            state.LastAttemptAtUtc = now;
         }
         return state;
     }
 
-    public async Task<StudentConceptState> CompleteExposureAsync(Guid studentId, Guid conceptId, CancellationToken cancellationToken = default)
+    /// <summary>Applies the EXPOSURE → RECOGNITION transition to a tracked state.</summary>
+    public StudentConceptState ApplyExposureCompleted(StudentConceptState? state, DateTime now)
     {
-        var current = await GetStateAsync(studentId, conceptId, cancellationToken);
-        if (current.LearningState != LearningState.Exposure)
+        if (state is null || state.LearningState != LearningState.Exposure)
             throw new InvalidOperationException("Exposure can only be completed from EXPOSURE.");
 
-        var state = await GetOrCreateTrackedStateAsync(studentId, conceptId, cancellationToken);
         state.LearningState = LearningState.Recognition;
-        state.LastAttemptAtUtc = UtcNow();
-        await db.SaveChangesAsync(cancellationToken);
+        state.LastAttemptAtUtc = now;
         return state;
     }
 
-    public async Task<StudentConceptState> RecordAnswerAsync(
-        Guid studentId, Guid conceptId, Guid sessionId, bool wasCorrect, int attemptsUsed, int hintsUsed,
-        long responseTimeMs, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Applies an answer to a tracked state: learning-state transition plus FSRS scheduling.
+    /// The caller guarantees that the session belongs to the student and to the concept's module.
+    /// </summary>
+    public StudentConceptState ApplyAnswer(
+        StudentConceptState? state, Guid sessionId, bool wasCorrect, int attemptsUsed, int hintsUsed,
+        long responseTimeMs, DateTime now)
     {
-        var now = UtcNow();
-        var conceptModuleId = await db.Concepts.Where(x => x.Id == conceptId)
-            .Select(x => (Guid?)x.ModuleId).SingleOrDefaultAsync(cancellationToken);
-        if (conceptModuleId is null) throw new KeyNotFoundException("Concept not found.");
-
-        var validSession = await db.StudySessions.AnyAsync(
-            x => x.Id == sessionId && x.StudentId == studentId && x.ModuleId == conceptModuleId,
-            cancellationToken);
-        if (!validSession)
-            throw new InvalidOperationException("The session does not belong to this student and module.");
-
-        var current = await GetStateAsync(studentId, conceptId, cancellationToken);
-        if (current.LearningState is LearningState.New or LearningState.Exposure)
+        if (state is null || state.LearningState is LearningState.New or LearningState.Exposure)
             throw new InvalidOperationException("The concept is not in a response state.");
 
-        var state = await GetOrCreateTrackedStateAsync(studentId, conceptId, cancellationToken);
         var rating = performance.Infer(wasCorrect, attemptsUsed, hintsUsed, responseTimeMs);
         state.LastAttemptAtUtc = now;
         if (wasCorrect) state.LastSuccessAtUtc = now;
@@ -129,26 +119,9 @@ public sealed class LearningProgressionService(
         state.Repetitions = schedule.Repetitions;
         state.Lapses = schedule.Lapses;
         state.LastFsrsRating = rating;
-        await db.SaveChangesAsync(cancellationToken);
         return state;
     }
 
-    private async Task<StudentConceptState> GetOrCreateTrackedStateAsync(Guid studentId, Guid conceptId, CancellationToken cancellationToken)
-    {
-        var state = await db.StudentConceptStates.SingleOrDefaultAsync(
-            x => x.StudentId == studentId && x.ConceptId == conceptId, cancellationToken);
-        if (state is not null) return state;
-
-        var exists = await db.Students.AnyAsync(x => x.Id == studentId && x.IsActive, cancellationToken)
-            && await db.Concepts.AnyAsync(x => x.Id == conceptId, cancellationToken);
-        if (!exists) throw new KeyNotFoundException("Active student or concept not found.");
-
-        state = new StudentConceptState { StudentId = studentId, ConceptId = conceptId };
-        db.StudentConceptStates.Add(state);
-        return state;
-    }
-
-    private DateTime UtcNow() => timeProvider.GetUtcNow().UtcDateTime;
     private static DateTime Utc(DateTime value) => DateTime.SpecifyKind(value, DateTimeKind.Utc);
 
     private static void ResetFreeRecallSuccesses(StudentConceptState state)

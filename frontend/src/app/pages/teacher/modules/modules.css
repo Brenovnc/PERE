@@ -1,0 +1,346 @@
+/* Shared by the modules page, the module fields and the concept editor (ModulesPage.module.css). */
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.title-row h2 {
+  margin: 0.15rem 0;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.columns,
+.editor-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 1rem;
+}
+
+.editor-columns {
+  grid-template-columns: minmax(15rem, 0.7fr) minmax(0, 1.3fr);
+  margin-top: 1rem;
+}
+
+.panel {
+  margin-bottom: 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface);
+}
+
+.panel h2 {
+  margin-top: 0;
+  font-size: 1.2rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.form-grid > button {
+  justify-self: start;
+}
+
+label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.wide {
+  grid-column: 1 / -1;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.5rem;
+  padding: 0.65rem 0.7rem;
+  color: var(--text);
+  background: var(--accent-soft);
+  font: inherit;
+}
+
+textarea {
+  resize: vertical;
+}
+
+button {
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  padding: 0.65rem 0.9rem;
+  color: var(--btn-cta-text);
+  background: var(--btn-cta-bg);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+button.secondary {
+  border-color: var(--btn-secondary-border);
+  color: var(--btn-secondary-text);
+  background: var(--btn-secondary-bg);
+}
+
+button.danger {
+  border-color: var(--danger-border);
+  color: var(--danger-text);
+  background: var(--danger-bg);
+}
+
+button.back,
+button.text-button {
+  border: 0;
+  padding: 0.4rem 0;
+  color: var(--text);
+  background: transparent;
+}
+
+button.back {
+  margin: 0 0 0.8rem;
+}
+
+.actions,
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.form-actions {
+  justify-content: flex-end;
+}
+
+.muted,
+small {
+  color: var(--accent);
+  font-size: 0.84rem;
+  font-weight: 400;
+}
+
+.issues {
+  margin: 0;
+  padding: 0.75rem 1rem 0.75rem 2rem;
+  border: 1px solid var(--warning-border);
+  border-radius: 0.65rem;
+  color: var(--warning-text);
+  background: var(--warning-bg);
+}
+
+/* Module and concept lists. */
+.module-list,
+.concept-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.module-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.module-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.module-link {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 0.65rem;
+  color: var(--text);
+  background: var(--surface-3);
+  font-weight: 650;
+  text-align: left;
+}
+
+.module-link > span:first-child {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.module-link small {
+  color: var(--text);
+  line-height: 1.45;
+}
+
+.concept-list .module-link {
+  margin: 0.45rem 0;
+}
+
+.concept-list .selected-concept {
+  border-color: var(--border-strong);
+  box-shadow: inset 0.2rem 0 var(--shadow);
+  background: var(--accent-soft);
+}
+
+.status {
+  font-size: 0.8rem;
+}
+
+.import-control {
+  max-width: 26rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.import-control input {
+  font-size: 0.85rem;
+}
+
+/* Concept editor. */
+.concept-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.editor-section {
+  min-width: 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: var(--surface);
+}
+
+.editor-section summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.editor-section summary span + span {
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: right;
+}
+
+.editor-section summary:focus-visible {
+  border-radius: 0.2rem;
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.editor-section[open] summary {
+  margin-bottom: 0.9rem;
+}
+
+.editor-section > label + label {
+  margin-top: 0.75rem;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.45rem 0;
+}
+
+.check input {
+  width: auto;
+}
+
+.activity {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0.7rem 0 1rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.65rem;
+  background: var(--accent-soft);
+}
+
+.activity .text-button {
+  justify-self: start;
+}
+
+/* Student features card (module fields). */
+.feature-card {
+  grid-column: 1 / -1;
+  padding: 1rem 1.2rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface);
+}
+
+.feature-card h3 {
+  margin: 0.1rem 0 0.7rem;
+}
+
+.feature-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 0.2rem;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.feature-row span {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.feature-row small {
+  line-height: 1.45;
+}
+
+.feature-row input {
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 1.35rem;
+  accent-color: var(--focus-ring);
+}
+
+.feature-row[data-disabled='true'] {
+  color: var(--text-muted);
+}
+
+@media (max-width: 760px) {
+  .columns,
+  .editor-columns,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .title-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .wide {
+    grid-column: auto;
+  }
+}

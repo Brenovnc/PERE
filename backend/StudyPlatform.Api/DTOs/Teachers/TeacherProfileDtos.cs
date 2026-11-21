@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace StudyPlatform.Api.DTOs.Teachers;
 
-public sealed record TeacherProfileResponse(string Name, string Email, string? Education, string? Institution, bool HasPhoto, long? PhotoVersion);
+public sealed record TeacherProfileResponse(string Name, string Email, string? Education, string? Institution);
 public sealed class UpdateTeacherProfileRequest
 {
     [Required, StringLength(120, MinimumLength = 1)] public string Name { get; init; } = "";

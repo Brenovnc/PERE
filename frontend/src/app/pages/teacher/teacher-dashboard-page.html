@@ -1,0 +1,150 @@
+<main class="teacher-page">
+  <app-page-header eyebrow="Dashboard" title="Acompanhamento">
+    <label class="class-select">
+      Turma
+      <select #classSelect aria-label="Turma" (change)="selectClassroom(classSelect.value)">
+        @for (item of classrooms(); track item.id) {
+          <option [value]="item.id" [selected]="item.id === classroomId()">{{ item.name }}</option>
+        }
+      </select>
+    </label>
+  </app-page-header>
+
+  @if (loading() && !selected()) {
+    <p role="status">Carregando dados…</p>
+  }
+  @if (error()) {
+    <p role="alert" class="panel error">
+      {{ error() }}
+      <button type="button" (click)="tryAgain()">Tentar novamente</button>
+    </p>
+  }
+  @if (!loading() && classrooms().length === 0 && !error()) {
+    <section class="panel empty">
+      <h2>Você ainda não tem turmas ativas.</h2>
+      <a class="button-link" routerLink="/teacher/classrooms">Criar turma</a>
+    </section>
+  }
+
+  @if (selected()) {
+    <section class="panel filter-card">
+      <h2>Filtros</h2>
+      <app-statistics-filters
+        [(value)]="filters"
+        [modules]="modules()"
+        [showMinAttempts]="true"
+        [disablePeriod]="!timeFiltered()"
+        [disableActivityType]="!timeFiltered()"
+        [disableMinAttempts]="tab() !== 'errors'"
+      />
+      @if (!filtersReady()) {
+        <p role="status">Selecione um intervalo de datas válido.</p>
+      }
+      <p>{{ filterSummary() }}</p>
+    </section>
+
+    <app-chart-tabs-card
+      label="Gráficos do dashboard"
+      [tabs]="tabs()"
+      [(activeId)]="tab"
+      [loading]="loading()"
+      [empty]="!stats() && !loading() && !error()"
+      emptyMessage="Não há dados para este gráfico nesta turma."
+    >
+      @if (chartData(); as data) {
+        @switch (tab()) {
+          @case ('distribution') {
+            <app-stacked-bar-chart
+              title="Distribuição dos conceitos (situação atual)"
+              [values]="data.distribution"
+            />
+          }
+          @case ('daily') {
+            @let daily = data.daily;
+            <app-line-chart
+              title="Atividades e taxa de acerto"
+              [labels]="daily.labels"
+              [details]="daily.details"
+              [series]="daily.series"
+            />
+          }
+          @case ('bands') {
+            <app-bar-chart
+              title="Alunos por faixa de progresso"
+              [labels]="data.bandLabels"
+              [values]="data.bandValues"
+            />
+          }
+          @case ('types') {
+            <app-bar-chart
+              title="Taxa de acerto por atividade (%)"
+              suffix="%"
+              [labels]="data.typeLabels"
+              [values]="data.typeRates"
+              [hasData]="data.hasTypeData"
+            />
+          }
+          @case ('errors') {
+            <app-bar-chart
+              title="Conceitos com mais erros (%)"
+              suffix="%"
+              [labels]="data.errorLabels"
+              [values]="data.errorRates"
+            />
+          }
+        }
+      }
+    </app-chart-tabs-card>
+
+    @if (progress(); as progress) {
+      <section class="panel table-card" aria-label="Progresso dos alunos">
+        <h2>Progresso dos alunos</h2>
+        @if (progress.students.length === 0) {
+          <app-empty-state>Nenhum aluno aprovado nesta turma.</app-empty-state>
+        } @else {
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>E-mail</th>
+                  <th>Progresso</th>
+                  <th>Revisões pendentes</th>
+                  <th>Último acesso</th>
+                  <th>Detalhes</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (student of progress.students; track student.studentId) {
+                  <tr>
+                    <td>
+                      <strong>{{ student.name }}</strong>
+                    </td>
+                    <td>{{ student.email }}</td>
+                    <td>{{ student.progressPercent }}%</td>
+                    <td>{{ student.pendingReviews }}</td>
+                    <td>{{ formatLastAccess(student.lastAccessAtUtc) }}</td>
+                    <td>
+                      <a
+                        class="button-link small"
+                        [routerLink]="[
+                          '/teacher/classrooms',
+                          classroomId(),
+                          'students',
+                          student.studentId,
+                          'progress',
+                        ]"
+                        [attr.aria-label]="'Detalhes de ' + student.name"
+                        >Detalhes</a
+                      >
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+    }
+  }
+</main>

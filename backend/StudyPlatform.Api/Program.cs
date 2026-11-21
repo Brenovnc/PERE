@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
@@ -7,13 +9,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StudyPlatform.Api.Data;
 using StudyPlatform.Api.DTOs.Auth;
+using StudyPlatform.Api.DTOs.Common;
 using StudyPlatform.Api.Middleware;
 using StudyPlatform.Api.Models;
+using StudyPlatform.Api.Seed;
 using StudyPlatform.Api.Services.Auth;
+using StudyPlatform.Api.Services.Classrooms;
 using StudyPlatform.Api.Services.Learning;
 using StudyPlatform.Api.Services.Modules;
-using StudyPlatform.Api.Services.Classrooms;
-using StudyPlatform.Api.Services.Students;
 using StudyPlatform.Api.Services.Progress;
 using StudyPlatform.Api.Validators;
 
@@ -45,34 +48,34 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<ModuleContentCache>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ClassroomService>();
-builder.Services.AddScoped<StudentManagementService>();
-builder.Services.AddScoped<TemporaryStudentAccessCodeService>();
-builder.Services.AddScoped<CsvStudentParser>();
-builder.Services.AddScoped<StudentCsvImportService>();
+builder.Services.AddScoped<EnrollmentService>();
 builder.Services.AddScoped<ModuleService>();
 builder.Services.AddScoped<ModuleTransferService>();
+builder.Services.AddScoped<PublicCommunityService>();
 builder.Services.AddScoped<PrerequisiteService>();
 builder.Services.AddScoped<FsrsService>();
 builder.Services.AddScoped<PerformanceRatingService>();
 builder.Services.AddScoped<LearningProgressionService>();
-builder.Services.AddScoped<ConceptEligibilityService>();
 builder.Services.AddScoped<ActivityCompatibilityService>();
-// Stage 10 session services
 builder.Services.AddScoped<ActivitySelectionService>();
 builder.Services.AddScoped<StudySessionService>();
 builder.Services.AddScoped<StudentStudyCatalogService>();
 builder.Services.AddScoped<StudentCrosswordService>();
-builder.Services.AddScoped<AdvanceReviewService>();
 builder.Services.AddScoped<TeacherProgressService>();
 builder.Services.AddScoped<TeacherStatisticsService>();
 builder.Services.AddScoped<TeacherProfileService>();
 builder.Services.AddScoped<IPasswordHasher<Teacher>, PasswordHasher<Teacher>>();
 builder.Services.AddScoped<IPasswordHasher<Student>, PasswordHasher<Student>>();
 builder.Services.AddScoped<ApiCookieAuthenticationEvents>();
+builder.Services.AddScoped<DemoSeeder>();
 
-var secureCookiePolicy = builder.Environment.IsDevelopment()
+// Outside Development cookies require HTTPS. PERE_ALLOW_INSECURE_COOKIES=true lifts that for the
+// all-in-one docker-compose, which serves the app over plain http://localhost; never set it in a publication.
+var secureCookiePolicy = builder.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("PERE_ALLOW_INSECURE_COOKIES")
     ? CookieSecurePolicy.SameAsRequest
     : CookieSecurePolicy.Always;
 
@@ -105,6 +108,24 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(AuthPolicies.Student, policy => policy.RequireRole(AuthRoles.Student));
 });
 
+// Login, registration and joining a classroom: 10 attempts per minute, per signed-in user or per IP address.
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy(RateLimitPolicies.Sensitive, context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? context.Connection.RemoteIpAddress?.ToString()
+                ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1) }));
+    options.OnRejected = async (context, ct) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        await context.HttpContext.Response.WriteAsJsonAsync(new ApiErrorResponse(
+            StatusCodes.Status429TooManyRequests, "too_many_attempts",
+            "Muitas tentativas. Aguarde um minuto e tente novamente.", new Dictionary<string, string[]>()), ct);
+    };
+});
+
 builder.Services.AddControllers()
     .ConfigureApiBehaviorOptions(options =>
     {
@@ -118,7 +139,7 @@ builder.Services.AddControllers()
 const string developmentCorsPolicy = "DevelopmentFrontend";
 if (builder.Environment.IsDevelopment())
 {
-    var frontendOrigin = builder.Configuration["Frontend:Origin"] ?? "http://localhost:5173";
+    var frontendOrigin = builder.Configuration["Frontend:Origin"] ?? "http://localhost:4200";
     builder.Services.AddCors(options => options.AddPolicy(developmentCorsPolicy, policy =>
         policy.WithOrigins(frontendOrigin)
             .AllowCredentials()
@@ -127,6 +148,18 @@ if (builder.Environment.IsDevelopment())
 }
 
 var app = builder.Build();
+
+// Both startup tasks are opt-in: by default the API never changes the database schema or adds data.
+var applyMigrations = app.Configuration.GetValue<bool>("PERE_APPLY_MIGRATIONS");
+var seedDemo = app.Configuration.GetValue<bool>("PERE_SEED_DEMO");
+if (applyMigrations || seedDemo)
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    if (applyMigrations)
+        await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.MigrateAsync();
+    if (seedDemo)
+        await scope.ServiceProvider.GetRequiredService<DemoSeeder>().SeedAsync(CancellationToken.None);
+}
 
 if (!app.Environment.IsDevelopment())
 {
@@ -139,6 +172,7 @@ if (app.Environment.IsDevelopment())
 }
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 app.UseMiddleware<CsrfValidationMiddleware>();
 
 app.MapGet("/health", (IConfiguration configuration) =>

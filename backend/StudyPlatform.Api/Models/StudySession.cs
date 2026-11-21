@@ -1,5 +1,5 @@
-using StudyPlatform.Api.Models.Activities;
 using StudyPlatform.Api.Domain.Enums;
+using StudyPlatform.Api.Models.Activities;
 
 namespace StudyPlatform.Api.Models;
 

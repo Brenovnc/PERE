@@ -1,4 +1,4 @@
-﻿namespace StudyPlatform.Api.Services.Learning;
+namespace StudyPlatform.Api.Services.Learning;
 
 public sealed record ConceptPrerequisiteNode(Guid Id, IReadOnlyCollection<Guid> PrerequisiteIds);
 

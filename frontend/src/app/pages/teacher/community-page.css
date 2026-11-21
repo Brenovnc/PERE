@@ -1,0 +1,149 @@
+h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.panel {
+  margin: 20px 0;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 6px 20px var(--shadow);
+}
+
+.heading {
+  margin-bottom: 16px;
+}
+
+.heading,
+.row,
+.card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.row {
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+}
+
+.row > span:first-child {
+  display: grid;
+  gap: 5px;
+}
+
+.row-actions {
+  display: flex;
+  gap: 8px;
+}
+
+small {
+  color: var(--accent);
+}
+
+.card {
+  align-items: flex-start;
+  margin: 12px 0;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-3);
+}
+
+.card h3 {
+  margin: 0 0 6px;
+}
+
+.card p {
+  margin: 7px 0;
+}
+
+.description {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.filters {
+  display: flex;
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.filters input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  color: var(--text);
+  background: var(--accent-soft);
+  font: inherit;
+}
+
+.filters input::placeholder {
+  color: var(--accent);
+}
+
+.chip {
+  display: inline-block;
+  margin: 8px 6px 0 0;
+  padding: 4px 8px;
+  border-radius: 20px;
+  color: var(--text);
+  background: var(--accent-soft);
+  font-size: 0.8rem;
+}
+
+.share-box {
+  margin: 16px 0;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--success-border);
+  border-radius: 10px;
+  color: var(--success-text);
+  background: var(--success-bg);
+}
+
+button,
+.button-link {
+  padding: 9px 13px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  color: var(--btn-cta-text);
+  background: var(--btn-cta-bg);
+  font: inherit;
+  font-weight: 650;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: wait;
+}
+
+.button-link:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (max-width: 650px) {
+  .heading,
+  .row,
+  .card,
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

@@ -1,0 +1,121 @@
+.content {
+  max-width: 54rem;
+}
+
+.card-panel {
+  margin: 1.2rem 0;
+  padding: clamp(1rem, 3vw, 2rem);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface);
+}
+
+.profile-top {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.profile-top h2 {
+  margin: 0.1rem 0;
+}
+
+.profile-top p,
+dd small {
+  color: var(--text-muted);
+}
+
+.avatar {
+  display: grid;
+  flex: 0 0 auto;
+  width: 6rem;
+  height: 6rem;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  color: var(--text);
+  background: var(--surface-3);
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: 0.7rem;
+  margin: 1.5rem 0;
+}
+
+dt {
+  color: var(--text-muted);
+}
+
+dd {
+  margin: 0;
+}
+
+dd small {
+  display: block;
+}
+
+form {
+  display: grid;
+  gap: 0.9rem;
+}
+
+label {
+  display: grid;
+  gap: 0.4rem;
+  color: var(--text);
+}
+
+input {
+  min-height: 2.7rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.55rem;
+  color: var(--text);
+  background: var(--surface-2);
+  font: inherit;
+}
+
+button {
+  min-height: 2.7rem;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.6rem;
+  color: var(--btn-cta-text);
+  background: var(--btn-cta-bg);
+  font: inherit;
+  cursor: pointer;
+}
+
+form > button {
+  justify-self: start;
+}
+
+button:disabled {
+  cursor: wait;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+@media (max-width: 520px) {
+  dl {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+
+  dd {
+    margin-bottom: 0.6rem;
+  }
+
+  .avatar {
+    width: 4.5rem;
+    height: 4.5rem;
+  }
+}

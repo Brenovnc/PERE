@@ -1,0 +1,140 @@
+<main class="teacher-page">
+  <app-page-header eyebrow="Detalhes do aluno" [title]="data()?.name || 'Aluno'">
+    <a class="back" routerLink="/teacher/dashboard" [queryParams]="{ classroom: classroomId() }"
+      >← Progresso da turma</a
+    >
+  </app-page-header>
+
+  <app-statistics-filters
+    [(value)]="filters"
+    [modules]="modules()"
+    [disablePeriod]="tab() === 'distribution'"
+    [disableActivityType]="tab() === 'distribution'"
+  />
+  @if (!filtersReady()) {
+    <p role="status">Selecione um intervalo de datas válido para atualizar.</p>
+  }
+  @if (statsLoading()) {
+    <p role="status">Atualizando…</p>
+  }
+  @if (statsError()) {
+    <p role="alert">
+      {{ statsError() }}
+      <button type="button" class="retry" (click)="tryAgain()">Tentar novamente</button>
+    </p>
+  }
+  @if (stats()) {
+    <p>{{ filterSummary() }}</p>
+  }
+
+  <app-chart-tabs-card
+    label="Gráficos do aluno"
+    [tabs]="tabs()"
+    [(activeId)]="tab"
+    [loading]="statsLoading()"
+    [empty]="!stats() && !statsLoading()"
+    [emptyMessage]="statsError() || 'Não há dados para este gráfico.'"
+  >
+    @if (chartData(); as data) {
+      @switch (tab()) {
+        @case ('distribution') {
+          <app-stacked-bar-chart
+            title="Distribuição dos conceitos (situação atual)"
+            [values]="data.distribution"
+          />
+        }
+        @case ('daily') {
+          <app-line-chart
+            title="Atividades e acertos"
+            [labels]="data.daily.labels"
+            [details]="data.daily.details"
+            [series]="data.daily.series"
+          />
+        }
+        @case ('types') {
+          <app-bar-chart
+            title="Taxa de acerto por atividade (%)"
+            suffix="%"
+            emptyText="Sem tentativas avaliáveis no período"
+            [labels]="data.typeLabels"
+            [values]="data.typeRates"
+            [hasData]="data.hasTypeData"
+          />
+        }
+        @case ('errors') {
+          <app-bar-chart
+            title="Conceitos com mais erros (%)"
+            suffix="%"
+            [labels]="data.errorLabels"
+            [values]="data.errorRates"
+          />
+        }
+      }
+    }
+  </app-chart-tabs-card>
+
+  @if (loading()) {
+    <p role="status" class="p-4">Carregando detalhes…</p>
+  }
+  @if (error()) {
+    <p role="alert" class="banner-error">{{ error() }}</p>
+  }
+  @if (data(); as data) {
+    <section class="student-info">
+      <div>
+        <span>E-mail</span>
+        <strong>{{ data.email }}</strong>
+      </div>
+      <div>
+        <span>Status</span>
+        <strong>{{ data.isActive ? 'Ativo' : 'Desativado' }}</strong>
+      </div>
+    </section>
+    @if (data.modules.length === 0) {
+      <section class="empty">
+        <h2>Nenhum módulo publicado associado</h2>
+        <app-empty-state>
+          Os módulos de progresso aparecem após serem publicados e associados a esta turma.
+        </app-empty-state>
+      </section>
+    } @else {
+      <section class="module-cards" aria-label="Progresso por módulo">
+        @for (module of data.modules; track module.moduleId) {
+          <article class="module-card">
+            <div class="module-title">
+              <div>
+                <p>{{ module.subject }}</p>
+                <h2>{{ module.title }}</h2>
+              </div>
+              <strong>{{ module.progressPercent }}%</strong>
+            </div>
+            <div
+              class="progress-track"
+              role="progressbar"
+              [attr.aria-label]="'Progresso em ' + module.title"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              [attr.aria-valuenow]="module.progressPercent"
+            >
+              <span [style.width.%]="module.progressPercent"></span>
+            </div>
+            <p class="caption">
+              {{ module.masteredConcepts }} dominados de {{ module.activeConcepts }} conceitos
+              ativos
+            </p>
+            <dl class="stats">
+              <dt>Dominados</dt>
+              <dd>{{ module.masteredConcepts }}</dd>
+              <dt>Em aprendizagem</dt>
+              <dd>{{ module.learningConcepts }}</dd>
+              <dt>Não iniciados</dt>
+              <dd>{{ module.notStartedConcepts }}</dd>
+              <dt>Revisões pendentes</dt>
+              <dd>{{ module.pendingReviews }}</dd>
+            </dl>
+          </article>
+        }
+      </section>
+    }
+  }
+</main>

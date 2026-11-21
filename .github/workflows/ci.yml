@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend (build e testes)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Build da API
+        run: dotnet build backend/StudyPlatform.Api/StudyPlatform.Api.csproj --configuration Release
+      - name: Formatação (dotnet format)
+        run: dotnet format backend/StudyPlatform.Api/StudyPlatform.Api.csproj --verify-no-changes
+      - name: Testes do motor de aprendizagem
+        run: dotnet test backend/Tests/StudyPlatform.Tests/StudyPlatform.Tests.csproj --configuration Release
+
+  frontend:
+    name: Frontend (lint, formatação, testes e build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - name: Testes do motor do visitante
+        run: npm test
+      - run: npm run build

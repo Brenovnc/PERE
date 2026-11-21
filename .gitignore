@@ -1,7 +1,7 @@
-# Node.js / Vite
+# Node.js / Angular
 frontend/node_modules/
 frontend/dist/
-frontend/coverage/
+frontend/.angular/
 .vercel/
 
 # .NET
