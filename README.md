@@ -7,7 +7,7 @@ de esquecer). Quem não está em turma estuda no **modo visitante**, sem conta.
 
 [![CI](https://github.com/SEU-USUARIO/pere/actions/workflows/ci.yml/badge.svg)](https://github.com/SEU-USUARIO/pere/actions/workflows/ci.yml)
 
-**Demonstração online:** em breve
+## 🌐 Acesse: https://pere-estudos.vercel.app
 
 | Tela inicial | Sessão de estudo do aluno |
 |---|---|
@@ -232,12 +232,14 @@ Pré-requisitos por sistema, comandos do dia a dia, variáveis de ambiente e sol
 
 ## Publicação
 
-O PERE está no ar em **[URL-DO-SITE](https://trabalho-cae.vercel.app/)**.
+O PERE está no ar em **[https://pere-estudos.vercel.app](https://pere-estudos.vercel.app)**.
 
 - **Frontend e API:** Vercel, cada um com seu Dockerfile; o `vercel.json` encaminha `/api` para a API, na mesma origem do app.
 - **Banco:** PostgreSQL no Neon (plano gratuito).
+- **Contas de demonstração:** as [contas de demonstração](#contas-de-demonstração) funcionam no site publicado.
 - **Segurança:** em produção, os cookies de sessão só trafegam por HTTPS. A opção `PERE_ALLOW_INSECURE_COOKIES` existe apenas para o `docker compose` local e não é usada na publicação.
 - **Custo de banco:** o plano gratuito do Neon limita a transferência de rede por mês. Por isso a API guarda em memória o conteúdo dos módulos e os dados públicos da comunidade, e os endpoints públicos usam ETag, para ler o banco o mínimo possível. Foi essa limitação que motivou a otimização descrita em [Destaques técnicos](#destaques-técnicos).
+
 ## Licença
 
 Distribuído sob a licença MIT. Veja o arquivo [LICENSE](LICENSE).

@@ -2,7 +2,7 @@
 
 - Sou iniciante no uso do Claude Code. Se faltar ferramenta (Docker Desktop, .NET SDK 10, Node, Git), pare e diga exatamente o que instalar, em passos simples.
 - Nunca execute comandos git (commit, tag, branch, reset, checkout etc.): apenas altere arquivos. Não mexa na tag "antes-da-reestruturacao" nem nos commits existentes.
-- Tudo é LOCAL por enquanto: não configure nem altere publicação (Vercel/Neon) sem pedido explícito. Os dados do banco local são de teste e podem ser apagados.
+- O PERE está publicado em https://pere-estudos.vercel.app (Vercel + Neon). Mudanças de publicação ou do banco de produção só com pedido explícito. Os dados do banco local são de teste e podem ser apagados.
 - Faça só o que foi pedido. Se uma decisão que mude comportamento não estiver clara, pergunte.
 - Código simples, legível e bem formatado, sem abstrações desnecessárias; comentários (em inglês) só onde o "porquê" não for óbvio. Textos da interface e documentação em português.
 - Ao terminar: confirme que build, lint e testes passam e dê um relatório CURTO (o que mudou, como verificar, pendências).
