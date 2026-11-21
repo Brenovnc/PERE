@@ -3,22 +3,88 @@
 O PERE ajuda alunos a **lembrar de verdade** o que estudam. Professores montam módulos de conceitos e turmas;
 alunos estudam em sessões curtas de até 10 atividades, escolhidas automaticamente, que combinam
 **recuperação ativa** (responder em vez de reler) com **repetição espaçada** (revisar no momento certo, antes
-de esquecer). Quem não está em turma pode estudar no **modo visitante**, sem conta.
+de esquecer). Quem não está em turma estuda no **modo visitante**, sem conta.
 
-> Projeto de portfólio. Backend em ASP.NET Core 10 + PostgreSQL; frontend em Angular 22 + Tailwind CSS v4.
+[![CI](https://github.com/SEU-USUARIO/pere/actions/workflows/ci.yml/badge.svg)](https://github.com/SEU-USUARIO/pere/actions/workflows/ci.yml)
+
+**Demonstração online:** em breve
+
+| Tela inicial | Sessão de estudo do aluno |
+|---|---|
+| ![Tela inicial](docs/prints/1-tela-inicial.png) | ![Sessão de estudo do aluno](docs/prints/2-sessao-aluno.png) |
+| **Painel do professor** | **Modo visitante** |
+| ![Painel do professor](docs/prints/3-painel-professor.png) | ![Modo visitante](docs/prints/4-modo-visitante.png) |
 
 ## Sumário
 
+- [Destaques técnicos](#destaques-técnicos)
+- [Stack](#stack)
+- [Decisões técnicas](#decisões-técnicas)
+- [História do projeto](#história-do-projeto)
+- [Como usei IA](#como-usei-ia)
 - [Como funciona](#como-funciona)
-- [Comece aqui](#comece-aqui)
-- [Pré-requisitos](#pré-requisitos)
-- [Ambiente local passo a passo](#ambiente-local-passo-a-passo)
-- [Comandos do dia a dia](#comandos-do-dia-a-dia)
-- [Contas de demonstração](#contas-de-demonstração)
-- [Solução de problemas](#solução-de-problemas)
+- [Como rodar](#como-rodar)
 - [Estrutura de pastas](#estrutura-de-pastas)
-- [Capturas de tela](#capturas-de-tela)
-- [Publicação (futuro)](#publicação-futuro)
+- [Publicação](#publicação)
+- [Licença](#licença)
+- [Autor](#autor)
+
+## Destaques técnicos
+
+- **Desempenho no backend:** cada resposta de aluno fazia de **41 a 52 consultas SQL** e agora faz **7** (medido
+  antes e depois). Três mudanças explicam isso: cache em memória do conteúdo dos módulos, com invalidação quando
+  o professor edita; fim da consulta ao banco a cada requisição para validar o cookie de sessão (o cookie leva só
+  claims); e correção de consultas N+1.
+- **Autenticação por cookie** (HttpOnly, 8 horas) com **proteção CSRF** por token validado em um middleware.
+- **Limite de tentativas** em login, cadastro e entrada em turma (10 por minuto).
+- **FSRS-6 no backend e no navegador:** o backend agenda as revisões dos alunos de turma; o **modo visitante**
+  roda o mesmo motor no navegador, **sem banco**, guardando o progresso em IndexedDB, com **exportar e importar
+  progresso**.
+- **Endpoints públicos com cache e ETag** para a comunidade de módulos.
+- **Docker com um comando:** `docker compose up -d --build` sobe banco, API e frontend, já com dados de demonstração.
+- **CI** no GitHub Actions: build, formatação, testes do motor, lint e build do frontend.
+
+## Stack
+
+- **Backend:** ASP.NET Core 10, EF Core 10 + Npgsql, PostgreSQL 17, Fsrs.Sharp (FSRS-6), xUnit.
+- **Frontend:** Angular 22 (standalone, signals, zoneless, rotas lazy, TypeScript estrito), Tailwind CSS v4,
+  Angular CDK, ts-fsrs, ESLint + Prettier, Vitest.
+- **Infraestrutura:** Docker Compose, nginx, GitHub Actions.
+
+## Decisões técnicas
+
+- **Cookie em vez de JWT:** o app e a API ficam na mesma origem, então um cookie HttpOnly é mais simples e mais
+  seguro (o JavaScript não lê o cookie) do que guardar um token no navegador. O custo é a proteção CSRF, que
+  está implementada.
+- **Cache em memória:** o plano gratuito do Neon limita a transferência de rede (5 GB por mês), então a API evita
+  ler o banco à toa: guarda o conteúdo dos módulos e os dados públicos da comunidade em memória.
+- **Progresso do visitante no navegador:** visitantes não precisam de conta nem de banco. O progresso fica em
+  IndexedDB e pode ser exportado e importado como arquivo.
+- **Backend como autoridade para alunos de turma:** o servidor escolhe a atividade, corrige a resposta e agenda a
+  revisão. O aluno não consegue forjar o próprio progresso.
+- **Angular + Tailwind:** Angular moderno (signals, sem zone.js, controle de fluxo novo) para um código enxuto, e
+  Tailwind v4 com tokens de tema em CSS para claro e escuro.
+
+## História do projeto
+
+O PERE começou como um trabalho acadêmico, com frontend em React e backend em ASP.NET Core. Depois eu o
+reestruturei em 6 fases:
+
+1. desempenho (cache e menos consultas);
+2. enxugamento do backend;
+3. conta de aluno e matrícula em turma;
+4. frontend refeito em Angular 22;
+5. modo visitante;
+6. acabamento.
+
+A tag `antes-da-reestruturacao` do Git marca o estado original do projeto.
+
+## Como usei IA
+
+A reestruturação foi feita com o Claude Code, a partir de um plano em fases que eu mesmo escrevi. Trabalhei uma
+fase por vez: pedia, o Claude Code executava e eu conferia as medições, lia os relatórios, testava à mão e pedia
+as correções que faltavam. As regras de trabalho (o que ele pode ou não fazer, o estilo do código, o que está
+fora de escopo) ficam no arquivo [CLAUDE.md](CLAUDE.md).
 
 ## Como funciona
 
@@ -84,14 +150,12 @@ flowchart LR
 
 No ambiente de desenvolvimento, o papel do nginx é feito pelo `npm start` (proxy de `/api` para a API).
 
-## Comece aqui
+## Como rodar
 
-Escolha o seu caminho:
-
-### 1. Só quero ver rodando (precisa apenas do Docker)
+### Só quero ver rodando (precisa apenas do Docker)
 
 ```bash
-git clone <URL-do-repositório> pere
+git clone https://github.com/SEU-USUARIO/pere.git
 cd pere
 docker compose up -d --build
 ```
@@ -102,19 +166,16 @@ primeira vez, o build das imagens leva alguns minutos. Para parar: `docker compo
 Esse comando sobe o banco, a API (que cria as tabelas e os dados de demonstração sozinha) e o frontend
 servido pelo nginx.
 
-### 2. Vou desenvolver
+### Vou desenvolver
 
-Instale os [pré-requisitos](#pré-requisitos) e siga o [ambiente local passo a passo](#ambiente-local-passo-a-passo).
-
-### 3. Já tenho tudo instalado
-
-Na raiz do repositório, com dois terminais:
+Com .NET SDK 10, Node.js, Docker e a ferramenta `dotnet-ef` instalados, na raiz do repositório e com dois
+terminais:
 
 ```bash
 # Terminal 1: banco, tabelas e API (http://localhost:5080)
 docker compose up -d postgres
 dotnet ef database update --project backend/StudyPlatform.Api/StudyPlatform.Api.csproj --startup-project backend/StudyPlatform.Api/StudyPlatform.Api.csproj
-dotnet run --project backend/StudyPlatform.Api/StudyPlatform.Api.csproj
+PERE_SEED_DEMO=true dotnet run --project backend/StudyPlatform.Api/StudyPlatform.Api.csproj   # PowerShell: $env:PERE_SEED_DEMO="true"; dotnet run ...
 
 # Terminal 2: frontend (http://localhost:4200)
 cd frontend
@@ -122,142 +183,10 @@ npm install
 npm start
 ```
 
-## Pré-requisitos
+Pré-requisitos por sistema, comandos do dia a dia, variáveis de ambiente e solução de problemas estão em
+[docs/DESENVOLVIMENTO.md](docs/DESENVOLVIMENTO.md).
 
-| Ferramenta | Versão | Para quê |
-|---|---|---|
-| Git | qualquer recente | baixar o código |
-| Docker Desktop (ou Docker Engine com Compose) | recente | PostgreSQL local e o "só quero ver rodando" |
-| .NET SDK | 10 | API e testes do backend |
-| Node.js | ^22.22.3, ^24.15.0 ou >= 26 (exigência do Angular 22) | frontend |
-| dotnet-ef | 10.0.0 | aplicar e criar migrations |
-
-### Windows
-
-Com o `winget` (já vem no Windows 10/11), em um PowerShell:
-
-```powershell
-winget install --id Git.Git -e
-winget install --id Docker.DockerDesktop -e
-winget install --id Microsoft.DotNet.SDK.10 -e
-winget install --id OpenJS.NodeJS.LTS -e
-```
-
-Depois abra o Docker Desktop uma vez (ele precisa estar aberto para os comandos `docker` funcionarem).
-
-### macOS
-
-Com o [Homebrew](https://brew.sh):
-
-```bash
-brew install git node@24
-brew install --cask docker dotnet-sdk
-```
-
-Abra o Docker Desktop uma vez depois de instalar.
-
-### Linux (Ubuntu/Debian)
-
-```bash
-sudo apt update && sudo apt install -y git
-# Docker Engine + Compose: siga https://docs.docker.com/engine/install/ubuntu/
-# .NET SDK 10: siga https://learn.microsoft.com/dotnet/core/install/linux
-# Node.js 24 com o nvm (https://github.com/nvm-sh/nvm):
-nvm install 24
-```
-
-### Em todos os sistemas
-
-```bash
-dotnet tool install --global dotnet-ef --version 10.0.0
-```
-
-Confira as versões:
-
-```bash
-git --version
-docker --version
-docker compose version
-dotnet --version        # 10.x
-dotnet ef --version     # 10.0.x
-node --version          # v22.22.3+, v24.15.0+ ou v26+
-```
-
-## Ambiente local passo a passo
-
-Execute na raiz do repositório.
-
-1. **Subir o banco** (PostgreSQL na porta 5432):
-   ```bash
-   docker compose up -d postgres
-   ```
-2. **Criar as tabelas** (a API não aplica migrations sozinha no ambiente local):
-   ```bash
-   dotnet ef database update --project backend/StudyPlatform.Api/StudyPlatform.Api.csproj --startup-project backend/StudyPlatform.Api/StudyPlatform.Api.csproj
-   ```
-3. **Rodar a API** em http://localhost:5080 (deixe o terminal aberto):
-   ```bash
-   dotnet run --project backend/StudyPlatform.Api/StudyPlatform.Api.csproj
-   ```
-   Para criar também as contas de demonstração, ligue o seed nesse comando:
-   ```bash
-   # bash/zsh
-   PERE_SEED_DEMO=true dotnet run --project backend/StudyPlatform.Api/StudyPlatform.Api.csproj
-   # PowerShell
-   $env:PERE_SEED_DEMO="true"; dotnet run --project backend/StudyPlatform.Api/StudyPlatform.Api.csproj
-   ```
-4. **Rodar o frontend** em http://localhost:4200, em outro terminal:
-   ```bash
-   cd frontend
-   npm install
-   npm start
-   ```
-   O `npm start` encaminha `/api` para a API, então app e API ficam na mesma origem e os cookies funcionam.
-5. Abra http://localhost:4200 e crie uma conta (ou use as de demonstração, se ligou o seed).
-
-### Variáveis de ambiente da API
-
-Todas desligadas por padrão:
-
-| Variável | Efeito |
-|---|---|
-| `PERE_APPLY_MIGRATIONS=true` | Aplica as migrations ao iniciar a API. |
-| `PERE_SEED_DEMO=true` | Cria os dados de demonstração ao iniciar (só uma vez; depois é ignorado). |
-| `PERE_ALLOW_INSECURE_COOKIES=true` | Permite cookies de sessão sem HTTPS fora do ambiente de desenvolvimento. Usado só pelo `docker compose` local; nunca use numa publicação. |
-
-## Comandos do dia a dia
-
-| Comando (na raiz, salvo indicação) | O que faz |
-|---|---|
-| `docker compose up -d postgres` | Sobe só o banco, para desenvolver. |
-| `docker compose stop postgres` | Para o banco (os dados ficam guardados). |
-| `docker compose up -d --build` | Sobe tudo (banco, API e frontend) em http://localhost:8080. |
-| `docker compose down` | Para e remove os contêineres (os dados ficam guardados). |
-| `docker compose down -v` | Para tudo e **apaga o banco** (reset completo). |
-| `dotnet ef database update --project backend/StudyPlatform.Api/StudyPlatform.Api.csproj --startup-project backend/StudyPlatform.Api/StudyPlatform.Api.csproj` | Cria ou atualiza as tabelas do banco. |
-| `dotnet ef migrations add NomeDaMudanca --project backend/StudyPlatform.Api/StudyPlatform.Api.csproj --startup-project backend/StudyPlatform.Api/StudyPlatform.Api.csproj` | Cria uma migration depois de mudar o modelo de dados. |
-| `dotnet ef migrations remove --project backend/StudyPlatform.Api/StudyPlatform.Api.csproj --startup-project backend/StudyPlatform.Api/StudyPlatform.Api.csproj` | Desfaz a última migration ainda não aplicada. |
-| `dotnet run --project backend/StudyPlatform.Api/StudyPlatform.Api.csproj` | Roda a API em http://localhost:5080. |
-| `dotnet test backend/Tests/StudyPlatform.Tests/StudyPlatform.Tests.csproj` | Roda os testes do motor de aprendizagem (não precisa de banco). |
-| `dotnet format backend/StudyPlatform.Api/StudyPlatform.Api.csproj` | Formata o código do backend. |
-| `cd frontend` e `npm start` | Roda o frontend em http://localhost:4200. |
-| `cd frontend` e `npm test` | Roda os testes do motor do visitante. |
-| `cd frontend` e `npm run lint` | Confere o código do frontend (ESLint). |
-| `cd frontend` e `npm run format` | Formata o frontend (Prettier). |
-| `cd frontend` e `npm run build` | Gera o build de produção em `frontend/dist/pere/browser`. |
-
-Pare a API (Ctrl+C no terminal dela) antes de criar ou remover migrations: com a API rodando, o build que esses
-comandos fazem não consegue sobrescrever os arquivos em uso.
-
-**Resetar o banco do ambiente local** (os dados locais são de teste):
-
-```bash
-docker compose down -v
-docker compose up -d postgres
-dotnet ef database update --project backend/StudyPlatform.Api/StudyPlatform.Api.csproj --startup-project backend/StudyPlatform.Api/StudyPlatform.Api.csproj
-```
-
-## Contas de demonstração
+### Contas de demonstração
 
 > **Somente demonstração.** Estas senhas são públicas. Os dados são criados quando a API inicia com
 > `PERE_SEED_DEMO=true` (o `docker compose up` completo já faz isso).
@@ -273,22 +202,6 @@ dotnet ef database update --project backend/StudyPlatform.Api/StudyPlatform.Api.
 - O arquivo do módulo está em [backend/StudyPlatform.Api/Seed/demo-module.json](backend/StudyPlatform.Api/Seed/demo-module.json)
   e serve de exemplo do formato de importação. Um exemplo mínimo está em
   [docs/module-exchange-v1.example.json](docs/module-exchange-v1.example.json).
-
-## Solução de problemas
-
-| Sintoma | Causa e solução |
-|---|---|
-| `failed to connect to the docker API` ou `Cannot connect to the Docker daemon` | O Docker Desktop está fechado. Abra-o e espere ficar "running". |
-| `port is already allocated` ou `address already in use` (5432, 5080, 4200 ou 8080) | Outro programa usa a porta. Descubra qual: Windows `netstat -ano \| findstr :5432`; macOS/Linux `lsof -i :5432`. Feche-o ou pare o outro PostgreSQL. |
-| Erros 500 e no log da API `Failed to connect to 127.0.0.1:5432` | O banco não está rodando: `docker compose up -d postgres`. |
-| `relation "..." does not exist` no log da API | As tabelas não foram criadas: rode o `dotnet ef database update`. |
-| `dotnet ef migrations ...` falha com "Build failed" ou "being used by another process" | A API está rodando e trava os arquivos do build. Pare a API (Ctrl+C) e repita o comando. |
-| `dotnet ef` não é reconhecido | Instale a ferramenta (`dotnet tool install --global dotnet-ef --version 10.0.0`) e abra um terminal novo. |
-| `npm` avisa `EBADENGINE` ou o `ng` reclama da versão do Node | Use Node ^22.22.3, ^24.15.0 ou 26+ (`node --version`). |
-| "Sua sessão expirou" ou erro de CSRF logo depois de reiniciar a API | Normal no ambiente local: a API em desenvolvimento cria chaves novas a cada início. Entre de novo. Se persistir, apague os cookies de `localhost`. |
-| Banco criado por uma versão antiga do projeto dá erros de coluna ou tabela | Recrie: `docker compose down -v` e depois os passos 1 e 2 do ambiente local. |
-| Na primeira subida do compose, o log da API mostra `Failed executing DbCommand ... __EFMigrationsHistory` | Normal: com o banco vazio, o EF procura o histórico de migrations antes de criá-lo. As linhas seguintes aplicam as migrations. |
-| O modo visitante "perdeu" o progresso | O progresso do visitante fica no navegador: limpar os dados do site ou usar outra janela anônima apaga tudo. Use "Exportar progresso" para guardar uma cópia. |
 
 ## Estrutura de pastas
 
@@ -311,24 +224,24 @@ dotnet ef database update --project backend/StudyPlatform.Api/StudyPlatform.Api.
 │   ├── src/app/shared/            componentes comuns e gráficos
 │   ├── Dockerfile, nginx.conf     imagem de produção (nginx)
 │   └── README.md                  detalhes do frontend e do motor do visitante
-├── docs/                          exemplo do formato de módulo (schemaVersion 1)
+├── docs/                          guia de desenvolvimento, prints e exemplo do formato de módulo
 ├── docker-compose.yml             banco (desenvolvimento) ou tudo (demonstração)
-├── vercel.json                    publicação futura
+├── vercel.json                    configuração de publicação (Vercel)
 └── .github/workflows/ci.yml       CI: build, formatação e testes
 ```
 
-## Capturas de tela
+## Publicação
 
-<!-- Adicione as imagens em docs/screenshots/ e troque os marcadores abaixo. -->
+O PERE está no ar em **[URL-DO-SITE](https://trabalho-cae.vercel.app/)**.
 
-- Tela de entrada: _(em breve)_
-- Área do aluno e sessão de estudo: _(em breve)_
-- Dashboard do professor: _(em breve)_
-- Modo visitante: _(em breve)_
+- **Frontend e API:** Vercel, cada um com seu Dockerfile; o `vercel.json` encaminha `/api` para a API, na mesma origem do app.
+- **Banco:** PostgreSQL no Neon (plano gratuito).
+- **Segurança:** em produção, os cookies de sessão só trafegam por HTTPS. A opção `PERE_ALLOW_INSECURE_COOKIES` existe apenas para o `docker compose` local e não é usada na publicação.
+- **Custo de banco:** o plano gratuito do Neon limita a transferência de rede por mês. Por isso a API guarda em memória o conteúdo dos módulos e os dados públicos da comunidade, e os endpoints públicos usam ETag, para ler o banco o mínimo possível. Foi essa limitação que motivou a otimização descrita em [Destaques técnicos](#destaques-técnicos).
+## Licença
 
-## Publicação (futuro)
+Distribuído sob a licença MIT. Veja o arquivo [LICENSE](LICENSE).
 
-A publicação ainda não está configurada. Há um `vercel.json` e Dockerfiles prontos para uma publicação futura
-(frontend e API no Vercel, banco no Neon). O plano gratuito do Neon limita a transferência de rede por mês, por
-isso a API guarda em memória o conteúdo dos módulos e os dados públicos da comunidade, para ler o banco o mínimo
-possível.
+## Autor
+
+Breno Vieira — LinkedIn: www.linkedin.com/in/breno-carneiro

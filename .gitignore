@@ -21,3 +21,9 @@ appsettings.*.local.json
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Build/test output
+.vs/
+TestResults/
+coverage/
+*.log

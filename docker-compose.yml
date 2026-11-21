@@ -3,18 +3,18 @@
 services:
   postgres:
     image: postgres:17-alpine
-    container_name: trabalho-cae-postgres
+    container_name: pere-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: trabalho_cae
-      POSTGRES_USER: trabalho_cae
+      POSTGRES_DB: pere
+      POSTGRES_USER: pere
       POSTGRES_PASSWORD: local_dev_password
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U trabalho_cae -d trabalho_cae"]
+      test: ["CMD-SHELL", "pg_isready -U pere -d pere"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -29,7 +29,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       PORT: "5080"
-      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=trabalho_cae;Username=trabalho_cae;Password=local_dev_password
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=pere;Username=pere;Password=local_dev_password
       # Creates/updates the schema and the demonstration data on startup (both off unless set).
       PERE_APPLY_MIGRATIONS: "true"
       PERE_SEED_DEMO: "true"

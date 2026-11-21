@@ -82,7 +82,7 @@ var secureCookiePolicy = builder.Environment.IsDevelopment() || builder.Configur
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "X-CSRF-TOKEN";
-    options.Cookie.Name = "CAE-XSRF";
+    options.Cookie.Name = "PERE-XSRF";
     options.Cookie.HttpOnly = true;
     options.Cookie.SameSite = SameSiteMode.Strict;
     options.Cookie.SecurePolicy = secureCookiePolicy;
@@ -91,7 +91,7 @@ builder.Services.AddAntiforgery(options =>
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.Cookie.Name = "CAE.Auth";
+        options.Cookie.Name = "PERE.Auth";
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Strict;
         options.Cookie.SecurePolicy = secureCookiePolicy;

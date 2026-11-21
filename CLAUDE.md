@@ -9,7 +9,7 @@
 
 # O projeto
 
-PERE (Plataforma Educacional de Repetição Espaçada), projeto de portfólio. Professores criam módulos de conceitos e turmas; alunos de turma estudam em sessões de até 10 atividades escolhidas automaticamente (recuperação ativa + repetição espaçada FSRS); visitantes estudam módulos da comunidade com o progresso só no navegador. O README.md descreve o produto, os comandos e a solução de problemas.
+PERE (Plataforma Educacional de Repetição Espaçada). Professores criam módulos de conceitos e turmas; alunos de turma estudam em sessões de até 10 atividades escolhidas automaticamente (recuperação ativa + repetição espaçada FSRS); visitantes estudam módulos da comunidade com o progresso só no navegador. O README.md descreve o produto e como rodar; docs/DESENVOLVIMENTO.md traz pré-requisitos, comandos, variáveis de ambiente e solução de problemas.
 
 ## Stack
 
@@ -18,7 +18,7 @@ PERE (Plataforma Educacional de Repetição Espaçada), projeto de portfólio. P
 
 ## Estrutura
 
-- `backend/StudyPlatform.Api`: Program.cs (DI, cookie "CAE.Auth" de 8 h só com claims, antiforgery CAE-XSRF/X-CSRF-TOKEN validado pelo CsrfValidationMiddleware, rate limiter em login/cadastro/entrada em turma, tarefas opcionais de inicialização). Controllers/ (Auth, Modules, Classrooms, StudySessions em /api/student, Community, PublicCommunity em /api/public sem login, TeacherDashboard, TeacherProfile). Services/Learning (StudySessionService, ActivitySelectionService, LearningProgressionService, FsrsService, PerformanceRatingService, PrerequisiteService, ModuleContentCache, catálogo e cruzadinha do aluno), Services/Modules (ModuleService, ModuleTransferService com o formato schemaVersion 1, PublicCommunityService com cache e ETag), Services/Classrooms (turmas e matrículas), Services/Auth, Services/Progress. Seed/ (DemoSeeder e demo-module.json). Migrations/ tem uma única migration Initial.
+- `backend/StudyPlatform.Api`: Program.cs (DI, cookie "PERE.Auth" de 8 h só com claims, antiforgery PERE-XSRF/X-CSRF-TOKEN validado pelo CsrfValidationMiddleware, rate limiter em login/cadastro/entrada em turma, tarefas opcionais de inicialização). Controllers/ (Auth, Modules, Classrooms, StudySessions em /api/student, Community, PublicCommunity em /api/public sem login, TeacherDashboard, TeacherProfile). Services/Learning (StudySessionService, ActivitySelectionService, LearningProgressionService, FsrsService, PerformanceRatingService, PrerequisiteService, ModuleContentCache, catálogo e cruzadinha do aluno), Services/Modules (ModuleService, ModuleTransferService com o formato schemaVersion 1, PublicCommunityService com cache e ETag), Services/Classrooms (turmas e matrículas), Services/Auth, Services/Progress. Seed/ (DemoSeeder e demo-module.json). Migrations/ tem uma única migration Initial.
 - `backend/Tests/StudyPlatform.Tests`: testes unitários do motor (LearningEngineUnitTests).
 - `frontend/src/app`: core/ (API, auth, CSRF, interceptors, tema, StudySource), pages/ (auth, student, teacher), layouts/, minigames/ (5 minigames + cruzadinha), shared/ (componentes e gráficos), visitor/ (modo visitante: motor em engine/, IndexedDB). Tema em src/theme.css, classes comuns em src/components.css.
 - `docs/`: exemplo do formato de módulo. `.github/workflows/ci.yml`: CI.
