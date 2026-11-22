@@ -32,7 +32,7 @@ export class ThemeService {
     document.documentElement.dataset['theme'] = theme;
     document
       .querySelector('meta[name="theme-color"]')
-      ?.setAttribute('content', theme === 'dark' ? '#111111' : '#F7F5F1');
+      ?.setAttribute('content', theme === 'dark' ? '#111111' : '#ECE7DF');
     this.theme.set(theme);
   }
 }

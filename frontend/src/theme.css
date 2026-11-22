@@ -87,6 +87,7 @@
   --tooltip-text: var(--text);
   --tooltip-border: var(--border);
   --header-bg: var(--bg);
+  --nav-pill-bg: color-mix(in srgb, var(--surface-1) 88%, transparent);
 
   --logo-bg: var(--beige);
   --logo-mark: var(--black);
@@ -94,16 +95,16 @@
 
 :root[data-theme='light'] {
   color-scheme: light;
-  --bg: var(--ivory);
-  --surface-1: #fdfcfa;
-  --surface-2: #f0ebe4;
+  --bg: #ece7df;
+  --surface-1: #fffefc;
+  --surface-2: #f3efe9;
   --surface-3: var(--beige);
   --surface: var(--surface-1);
   --field-bg: var(--surface-1);
   --text: #2b2620;
   --text-heading: #1c1915;
   --text-muted: #665e56;
-  --border: #e0d8cd;
+  --border: #d6ccbf;
   --border-strong: #8a7b6e;
   --accent: var(--brown);
   --accent-soft: #efe6d6;
@@ -112,7 +113,7 @@
   --select-soft: #e3eaf3;
   --select-contrast: #fdfcfa;
   --focus-ring: var(--brown);
-  --card-shadow: 0 1px 2px rgba(122, 94, 73, 0.12);
+  --card-shadow: 0 1px 2px rgba(60, 45, 30, 0.06), 0 2px 8px rgba(60, 45, 30, 0.06);
   --shadow: color-mix(in srgb, var(--brown) 10%, transparent);
   --overlay: color-mix(in srgb, var(--black) 52%, transparent);
 
@@ -122,14 +123,14 @@
   --btn-cta-text: #fdfcfa;
   --btn-secondary-bg: var(--surface-1);
   --btn-secondary-text: var(--text);
-  --btn-secondary-border: #cfc5b8;
+  --btn-secondary-border: #c9bdae;
   --btn-hover: #664e3c;
   --badge-bg: var(--beige);
   --badge-text: var(--charcoal);
 
-  --nav-active-bg: var(--surface-2);
+  --nav-active-bg: var(--beige);
   --nav-active-text: var(--text-heading);
-  --nav-active-border: #cfc5b8;
+  --nav-active-border: #c9bdae;
 
   --success-bg: #e6efe7;
   --success-border: #a9c4ae;
@@ -145,14 +146,15 @@
   --game-cell-active-bg: var(--beige);
   --chart-1: var(--brown);
   --chart-2: #366341;
-  --chart-3: #8a7b6e;
+  --chart-3: #cfc6ba;
   --chart-1-text: #fdfcfa;
   --chart-2-text: #fdfcfa;
   --chart-3-text: #141210;
   --tooltip-bg: var(--ivory);
   --tooltip-text: var(--charcoal);
   --tooltip-border: var(--taupe);
-  --header-bg: var(--bg);
+  --header-bg: var(--surface-1);
+  --nav-pill-bg: var(--bg);
 
   --logo-bg: var(--brown);
   --logo-mark: var(--ivory);

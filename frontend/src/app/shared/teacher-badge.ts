@@ -6,7 +6,12 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
-      class="flex min-w-0 shrink-0 items-center gap-[0.7rem] rounded-xl bg-surface-2 px-3 py-[0.6rem]"
+      class="flex min-w-0 shrink-0 items-center gap-[0.7rem] rounded-xl px-3 py-[0.6rem]"
+      [class]="
+        onPage()
+          ? 'bg-surface-2 [:root[data-theme=light]_&]:border [:root[data-theme=light]_&]:border-border [:root[data-theme=light]_&]:bg-surface-1'
+          : 'bg-surface-2'
+      "
     >
       <span
         aria-hidden="true"
@@ -31,6 +36,8 @@ export class TeacherBadge {
   readonly name = input<string | null>(null);
   readonly institution = input<string | null>(null);
   readonly size = input(48);
+  /** True when the badge sits directly on the page background instead of inside a card. */
+  readonly onPage = input(false);
 
   protected readonly displayName = computed(() => this.name()?.trim() || 'Professor(a)');
   protected readonly initial = computed(() =>

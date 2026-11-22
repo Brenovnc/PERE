@@ -5,7 +5,7 @@ alunos estudam em sessões curtas de até 10 atividades, escolhidas automaticame
 **recuperação ativa** (responder em vez de reler) com **repetição espaçada** (revisar no momento certo, antes
 de esquecer). Quem não está em turma estuda no **modo visitante**, sem conta.
 
-[![CI](https://github.com/SEU-USUARIO/pere/actions/workflows/ci.yml/badge.svg)](https://github.com/SEU-USUARIO/pere/actions/workflows/ci.yml)
+[![CI](https://github.com/Brenovnc/PERE/actions/workflows/ci.yml/badge.svg)](https://github.com/Brenovnc/PERE/actions/workflows/ci.yml)
 
 ## 🌐 Acesse: https://pere-estudos.vercel.app
 
@@ -20,6 +20,7 @@ de esquecer). Quem não está em turma estuda no **modo visitante**, sem conta.
 - [Destaques técnicos](#destaques-técnicos)
 - [Stack](#stack)
 - [Decisões técnicas](#decisões-técnicas)
+  - [Design e usabilidade](#design-e-usabilidade)
 - [História do projeto](#história-do-projeto)
 - [Como usei IA](#como-usei-ia)
 - [Como funciona](#como-funciona)
@@ -65,17 +66,37 @@ de esquecer). Quem não está em turma estuda no **modo visitante**, sem conta.
 - **Angular + Tailwind:** Angular moderno (signals, sem zone.js, controle de fluxo novo) para um código enxuto, e
   Tailwind v4 com tokens de tema em CSS para claro e escuro.
 
+### Design e usabilidade
+
+Na revisão visual, estas foram as decisões (as regras ficam documentadas na seção "Guia visual" do
+[CLAUDE.md](CLAUDE.md)):
+
+- **Tipografia:** Lexend nos títulos e enunciados das atividades (família criada para facilitar a leitura) e
+  Atkinson Hyperlegible Next no texto e na interface (criada pelo Braille Institute para legibilidade). Não há
+  fonte serifada.
+- **Cores:** paleta derivada das cores da logo (bege, marrom, marfim), com neutros puxados para o mesmo tom
+  quente, um ardósia (complementar do marrom) só para seleção nos jogos e cores de estado (verde, vermelho,
+  ocre). O contraste foi conferido (texto ≥ 4,5:1; bordas e gráficos ≥ 3:1) nos temas claro e escuro.
+- **Hierarquia:** uma ação principal por área, ações destrutivas nunca em destaque, o enunciado da atividade
+  como texto mais importante da tela e instruções longas em ajuda contextual (botão "?").
+- **Heurísticas de Nielsen** usadas na revisão: visibilidade do estado do sistema (barra de progresso
+  "Atividade N de 10"), consistência (nomes e componentes iguais em todas as telas), design minimalista
+  (menos texto e menos caixas) e prevenção de erros (ações de perigo diferenciadas).
+- **Select com melhoria progressiva:** `appearance: base-select` onde o navegador suporta; nos outros, o
+  select nativo estilizado.
+
 ## História do projeto
 
 O PERE começou como um trabalho acadêmico, com frontend em React e backend em ASP.NET Core. Depois eu o
-reestruturei em 6 fases:
+reestruturei em 7 fases:
 
 1. desempenho (cache e menos consultas);
 2. enxugamento do backend;
 3. conta de aluno e matrícula em turma;
 4. frontend refeito em Angular 22;
 5. modo visitante;
-6. acabamento.
+6. acabamento;
+7. revisão visual e de usabilidade (tipografia, cores, hierarquia e minigames).
 
 A tag `antes-da-reestruturacao` do Git marca o estado original do projeto.
 
@@ -85,6 +106,10 @@ A reestruturação foi feita com o Claude Code, a partir de um plano em fases qu
 fase por vez: pedia, o Claude Code executava e eu conferia as medições, lia os relatórios, testava à mão e pedia
 as correções que faltavam. As regras de trabalho (o que ele pode ou não fazer, o estilo do código, o que está
 fora de escopo) ficam no arquivo [CLAUDE.md](CLAUDE.md).
+
+A revisão visual também foi feita em fases. Primeiro levantei os problemas usando o próprio sistema; depois
+pesquisei referências (heurísticas de Nielsen, Refactoring UI, Laws of UX, WCAG) com apoio do Claude e escrevi
+os prompts. O Claude Code executou fase por fase, e eu conferi no navegador e pedi os ajustes finos.
 
 ## Como funciona
 
@@ -106,10 +131,10 @@ Novo → Exposição → Reconhecimento → Recordação guiada → Recordação
 
 | Estado | O que o aluno faz | Minigame |
 |---|---|---|
-| Exposição | Lê a definição e revela as palavras-chave | Exposição |
-| Reconhecimento | Reconhece se uma frase está certa ou põe passos em ordem | Verdadeiro/Falso, Ordenação |
-| Recordação guiada | Completa uma frase escolhendo as palavras certas | Lacunas, Ordenação |
-| Recordação livre e Dominado | Descobre o conceito a partir de pistas e escreve o nome | Adivinhe o conceito |
+| Exposição | Lê a definição e revela as palavras-chave | Leitura |
+| Reconhecimento | Reconhece se uma frase está certa ou põe passos em ordem | Verdadeiro ou falso, Ordenação |
+| Recordação guiada | Completa uma frase escolhendo as palavras certas: tocar numa palavra a coloca na próxima lacuna vazia (ou na lacuna escolhida); também dá para arrastar | Complete as lacunas, Ordenação |
+| Recordação livre e Dominado | Descobre o conceito a partir de pistas e escreve o nome | Qual é o conceito? |
 
 - **Pré-requisitos**: um conceito novo só aparece quando todos os seus pré-requisitos estão dominados.
 - **Domínio**: exige dois acertos em recordação livre, o segundo numa outra sessão e só depois de chegar a
@@ -155,8 +180,8 @@ No ambiente de desenvolvimento, o papel do nginx é feito pelo `npm start` (prox
 ### Só quero ver rodando (precisa apenas do Docker)
 
 ```bash
-git clone https://github.com/SEU-USUARIO/pere.git
-cd pere
+git clone https://github.com/Brenovnc/PERE.git
+cd PERE
 docker compose up -d --build
 ```
 

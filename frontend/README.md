@@ -5,6 +5,7 @@ Frontend do PERE em Angular.
 - Angular 22 (componentes standalone, signals, rotas lazy, sem zone.js), TypeScript estrito
 - Tailwind CSS v4 (configurado pelo Angular CLI; tokens de tema em `src/theme.css`) e Angular CDK
 - ESLint (angular-eslint) e Prettier
+- Regras visuais: seção "Guia visual" do [CLAUDE.md](../CLAUDE.md); botões em `src/components.css` (`btn`, `btn-primary`, `btn-ghost`, `btn-danger`)
 
 ## Requisitos
 

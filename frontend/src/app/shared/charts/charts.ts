@@ -30,6 +30,10 @@ const chartStyles = `
   .stacked {
     display: flex; width: 100%; height: 2.6rem; overflow: hidden; border-radius: 0.5rem;
   }
+  /* The light segment color has little contrast with the white card, so the light theme outlines the bar. */
+  :host-context([data-theme='light']) .stacked {
+    box-sizing: border-box; border: 1px solid var(--border-strong);
+  }
   .segment {
     display: flex; min-width: 0; align-items: center; justify-content: center;
     font-size: 0.875rem; font-weight: 600; font-variant-numeric: tabular-nums;
